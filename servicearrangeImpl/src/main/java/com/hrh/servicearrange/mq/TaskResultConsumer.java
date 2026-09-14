@@ -6,10 +6,10 @@ package com.hrh.servicearrange.mq;
  * @flow
  */
 
-import cn.hutool.core.util.CharsetUtil;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import cn.hutool.core.util.StrUtil;
 import com.rabbitmq.client.Channel;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.CreateMode;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,59 +17,44 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.annotation.StreamListener;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-
+/**
+ * 任务执行完后继续处理下一个节点流程
+ */
 @Component
 @EnableBinding(MqChannelProcessor.class)
 public class TaskResultConsumer {
-
     @Autowired
-    private MqChannelProcessor processor;
+    private TaskProductor taskProductor;
+
+
     @Value("${task.result_queue_name}")
     private String taskResult_queue_name;
+
+    @Autowired
+    CuratorFramework curatorFramework;
 
     @StreamListener(target = MqChannelProcessor.TASK_RESULT_INPUT)
     @RabbitHandler
     public void listenInstTaskResult(Message<?> message,
                                      @Header(AmqpHeaders.CHANNEL) Channel channel,
                                      @Header(AmqpHeaders.DELIVERY_TAG) Long deliveryTag) {
-        JSONObject jsonObj = null;
+        String lockNode = null;
+        //加锁
         try {
-            System.out.println("接收到【实例任务结果】状态信息  : " + message.toString());
-            jsonObj = JSONUtil.parseObj(message.getPayload());
-            if (null == jsonObj && message.getPayload() instanceof byte[]) {
-                Message<byte[]> messageByte = (Message<byte[]>) message;
-                String json = new String(messageByte.getPayload(), CharsetUtil.CHARSET_UTF_8);
-                jsonObj = JSONUtil.parseObj(json);
-            }
-            Thread.sleep(5000);
-            //手工ack
-            channel.basicAck(deliveryTag, true);
+            lockNode = curatorFramework.create()
+                    .withMode(CreateMode.EPHEMERAL)
+                    .forPath("");
         } catch (Exception e) {
-            if(channel.isOpen()) {
-                try {
-                    channel.basicNack(deliveryTag, false,true);
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-            }
             e.printStackTrace();
         }
-        System.out.println("receive--2: " + jsonObj.toString());
+        //加锁成功进行任务生产
+        if (StrUtil.isNotEmpty(lockNode)) {
+        } else {
+            //任务执行完解锁
+        }
     }
 
-    public void sendTaskResult(Object obj) {
-        Map<String, Object> properties2 = new HashMap<>();
-        properties2.put("receiveSign", taskResult_queue_name);
-        MessageHeaders mhs2 = new MessageHeaders(properties2);
-        processor.taskProductor().send(MessageBuilder.createMessage(obj, mhs2));
-    }
 }
