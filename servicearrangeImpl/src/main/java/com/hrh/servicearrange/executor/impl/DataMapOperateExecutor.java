@@ -13,16 +13,15 @@ import com.hrh.servicearrange.dsl.KeyValueDto;
 import com.hrh.servicearrange.dsl.KeyValueWithJsonPathDto;
 import com.hrh.servicearrange.entity.Inst;
 import com.hrh.servicearrange.entity.InstLog;
-import com.hrh.servicearrange.entity.NodeLoopInfo;
 import com.hrh.servicearrange.entity.Task;
 import com.hrh.servicearrange.executor.Execute;
 import com.hrh.servicearrange.parser.annotation.CellType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,6 +33,9 @@ import java.util.stream.Stream;
  */
 @Service(value = CellType.FUN_DATAMAP)
 public class DataMapOperateExecutor implements Execute {
+    @Autowired
+    private StartOperateExecutor startOperateExecutor;
+
     @Override
     public Task runProcess(Task task, Inst inst, TaskDao taskDao, InstLogDao instLogDao) {
         String inputs = task.getInputs();
@@ -43,26 +45,8 @@ public class DataMapOperateExecutor implements Execute {
         pouts.set("dynamicParams", inst.getDynamicParams());
         Task startTask = taskDao.findStartTask(task.getInstId(), CellType.START);
         pouts.set(startTask.getId(), startTask.getOutputs());
-        String[] id1s = StrUtil.subBetweenAll(inputs, "#pno_", "$");
-        String[] id2s = StrUtil.subBetweenAll(inputs, "#header_", "$");
-        Set<String> nodeIds = Stream.of(id1s).collect(Collectors.toSet());
-        nodeIds.addAll(Stream.of(id2s).filter(s -> !StringUtils.isEmpty(s)).collect(Collectors.toSet()));
-        //获取所有节点任务
-        List<Task> taskList = taskDao.findAllByInstIdAndNodeIdIn(task.getInstId(), nodeIds);
-        if (taskList != null && taskList.size() > 0) {
-            taskList.stream().forEach(t -> {
-                String loopTime = "0";
-                List<NodeLoopInfo> loopInfos = inst.getLoopRunTimesMap().entrySet().stream().filter(e -> e.getValue().getIdsBetweenLoopEdge().contains(t.getNodeId())).map(e -> e.getValue()).collect(Collectors.toList());
-                if (loopInfos != null && loopInfos.size() > 0) {
-                    NodeLoopInfo near = loopInfos.stream().sorted((n1, n2) -> n1.getIdsBetweenLoopEdge().size() - n2.getIdsBetweenLoopEdge().size()).findFirst().get();
-                    loopTime = near.getLoopEdgeId() + "|" + near.getTimes();
-                }
-                if (loopTime.equals(t.getLoopTimes())) {
-                    pouts.set(t.getNodeId(), t.getOutputs());
-                }
-            });
-        }
-
+        //获取所有id的数据
+        startOperateExecutor.getDataByNodeIds(task, inst, taskDao, inputs, pouts);
         FunDatamapCell.Data.ChildInput cin = JSONUtil.toBean(jsonObject.getJSONObject("childInputs"), FunDatamapCell.Data.ChildInput.class);
         if (cin != null) {
             if (null != cin.getReqPath() && cin.getReqPath().size() > 0) {
