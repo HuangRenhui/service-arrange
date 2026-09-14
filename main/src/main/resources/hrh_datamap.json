@@ -1,0 +1,58 @@
+{
+    "cells": [
+        {
+            "name": "开始",
+            "cellType": "node_start",
+            "id": "2d557d74-09ee-447b-bd4a-1e7b92da7202",
+            "data": {
+                "inputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}",
+            }
+        },
+        {
+            "name": "数据映射1",
+            "cellType": "node_inner_datamap",
+            "id": "a8e09b42-3ea0-43bf-9971-c26f94f15bd5",
+            "data": {
+                "parentsOutputs": [
+                    {
+                        "contentType": "application/json",
+                        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}"
+                    }
+                ],
+                "childInputs": {
+                    "reqPath": null,
+                    "reqQuery": null,
+                    "reqHeaders": [{
+                        "name": "1",
+                        "key": "X-AUTH-ID",
+                        "type": "Content-Type",
+                        "jsonpathMapping": "#header_$X-AToken"
+                    }],
+                    "reqBodyForm": null,
+                    "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\",\"jsonpathMapping\":\"\"},\"name\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$name\"},\"wftype\":{\"type\":\"number\",\"jsonpathMapping\":\"#start$wftype\"},\"gpid\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$gpid\"},\"comment\":{\"type\":\"string\",\"jsonpathMapping\":\"\"}}}"
+                }
+            },
+            "ports": {
+                "items": [
+                    {
+                        "id": "d23e8be8-d831-43c4-9452-bad026ea5307"
+                    },
+                    {
+                        "id": "e671e30e-1d54-4f6e-a725-83409dc4d6af"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "结束",
+            "cellType": "node_end",
+            "id": "f424c6c8-8ca5-413d-bda2-1352b1f90dca",
+            "data": {
+                "contentType": "application/json",
+                "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode2\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$projectCode\"},\"name2\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$name\"},\"wftype2\":{\"type\":\"number\",\"jsonpathMapping\":\"#start$wftype\"},\"gpid2\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$gpid\"},\"comment2\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$comment\"}}}"
+            }
+        }
+    ],
+    "groups": [
+    ]
+}
