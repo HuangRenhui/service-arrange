@@ -1,0 +1,164 @@
+{
+  "cells": [
+    {
+      "name": "开始",
+      "cellType": "node_start",
+      "id": "2d557d74-09ee-447b-bd4a-1e7b92da7202",
+      "data": {
+        "inputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}",
+        "globals": [
+          {
+            "name": "类别",
+            "key": "wftype",
+            "type": "int",
+            "value": 1
+          },
+          {
+            "name": "分组",
+            "key": "gpid",
+            "type": "string",
+            "value": "igis"
+          }
+        ]
+      }
+    },
+    {
+      "name": "普通线-连接start",
+      "cellType": "edge_common",
+      "id": "0a8ea960-16a6-4cd8-90a3-8d7b67c45ca1",
+      "source": {
+        "cell": "2d557d74-09ee-447b-bd4a-1e7b92da7202",
+        "port": "e671e30e-1d54-4f6e-a725-83409dc4d6af"
+      },
+      "target": {
+        "cell": "a8e09b42-3ea0-43bf-9971-c26f94f15bd5",
+        "port": "2463fc4b-f336-4b25-a1fe-f772d0f27fe6"
+      }
+    },
+    {
+      "name": "数据映射1",
+      "cellType": "node_inner_datamap",
+      "id": "a8e09b42-3ea0-43bf-9971-c26f94f15bd5",
+      "data": {
+        "parentsOutputs": [
+          {
+            "contentType": "application/json",
+            "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}"
+          }
+        ],
+        "childInputs": {
+          "reqPath": null,
+          "reqQuery": null,
+          "reqHeaders": [
+            {
+              "name": "1",
+              "key": "X-AToken",
+              "type": "Content-Type",
+              "jsonpathMapping": "#header_$X-AToken"
+            }
+          ],
+          "reqBodyForm": null,
+          "reqBodyJson": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\",\"jsonpathMapping\":\"\"},\"name\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$name\"},\"wftype\":{\"type\":\"number\",\"jsonpathMapping\":\"#start$wftype\"},\"gpid\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$gpid\"},\"comment\":{\"type\":\"string\",\"jsonpathMapping\":\"\"}}}"
+        }
+      },
+      "ports": {
+        "items": [
+          {
+            "id": "d23e8be8-d831-43c4-9452-bad026ea5307"
+          },
+          {
+            "id": "e671e30e-1d54-4f6e-a725-83409dc4d6af"
+          }
+        ]
+      }
+    },
+    {
+      "name": "普通线-连接数据映射",
+      "cellType": "edge_common",
+      "id": "0a8ea960-16a6-4cd8-90a3-8d7b67c45ca1",
+      "source": {
+        "cell": "a8e09b42-3ea0-43bf-9971-c26f94f15bd5",
+        "port": "e671e30e-1d54-4f6e-a725-83409dc4d6af"
+      },
+      "target": {
+        "cell": "500be83a-9818-4bf7-b373-b4569a4f49f8",
+        "port": "2463fc4b-f336-4b25-a1fe-f772d0f27fe6"
+      }
+    },
+    {
+      "name": "http1",
+      "cellType": "node_outer_http",
+      "id": "500be83a-9818-4bf7-b373-b4569a4f49f8",
+      "groupIds": [
+        "fhc4c6c8-8ca5-413d-bda2-1352b1f90dca"
+      ],
+      "data": {
+        "protocol": "http",
+        "url": "http://192.168.20.9/timingmgr/task/findTree",
+        "requestType": "GET",
+        "outputs": {
+          "contentType": "application/json",
+          "outputsJsonSchema": "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"description\":\"唯一标识id\\n固定的节点id如下：\\n按类型分类：*\\n按状态分类：#\\n停用：avail\\n启用：unavail\"},\"text\":{\"type\":\"string\",\"description\":\"显示文本\"},\"sort\":{\"type\":\"number\",\"description\":\"排序值\"},\"children\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"text\":{\"type\":\"string\"},\"sort\":{\"type\":\"number\"},\"children\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}},\"description\":\"子节点\"}}}}"
+        },
+        "inputs": {
+          "reqPath": null,
+          "reqQuery": null,
+          "reqHeaders": [
+            {
+              "key": "X-AToken"
+            }
+          ],
+          "reqBodyForm": null,
+          "bodyJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}"
+        },
+        "errorno": "5000",
+        "rollbackRule": {
+          "rollbackURL": "http://192.168.10.126/timingmgr/task/findTree",
+          "rollbackType": "GET"
+        }
+      },
+      "ports": {
+        "items": [
+          {
+            "id": "2463fc4b-f336-4b25-a1fe-f772d0f27fe6"
+          },
+          {
+            "id": "fbe1c745-2233-401b-9c5b-dcddbab2ee62"
+          },
+          {
+            "id": "d3e6d35a-070f-4ab7-8f39-ce5e18f15f66"
+          }
+        ]
+      }
+    },
+    {
+      "name": "e3-pt",
+      "cellType": "edge_common",
+      "id": "1bfe0c0e-152c-478b-8895-f083d1210d1e",
+      "source": {
+        "cell": "500be83a-9818-4bf7-b373-b4569a4f49f8",
+        "port": "9e2cb661-5863-4a7f-95cc-471ffed63283"
+      },
+      "target": {
+        "cell": "f424c6c8-8ca5-413d-bda2-1352b1f90dca",
+        "port": "542d909e-229d-46d5-a9ab-72e5a9e358a5"
+      }
+    },
+    {
+      "name": "结束",
+      "cellType": "node_end",
+      "id": "f424c6c8-8ca5-413d-bda2-1352b1f90dca",
+      "data": {
+        "contentType": "application/json",
+        "outputsJsonSchema": "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"description\":\"唯一标识id\\n固定的节点id如下：\\n按类型分类：*\\n按状态分类：#\\n停用：avail\\n启用：unavail\"},\"text\":{\"type\":\"string\",\"description\":\"显示文本\"},\"sort\":{\"type\":\"number\",\"description\":\"排序值\"},\"children\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"text\":{\"type\":\"string\"},\"sort\":{\"type\":\"number\"},\"children\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}},\"description\":\"子节点\"}}}}"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": "fhc4c6c8-8ca5-413d-bda2-1352b1f90dca",
+      "name": "hrh-http",
+      "type": "group_compensate"
+    }
+  ]
+}

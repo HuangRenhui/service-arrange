@@ -1,0 +1,112 @@
+[
+  {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": [
+          {
+            "jsonpathMapping": "",
+            "type": "text",
+            "id": "5b776ea5-1805-4367-b7dd-e29b367f5a08",
+            "key": "where"
+          },
+          {
+            "jsonpathMapping": "",
+            "type": "text",
+            "id": "ab300584-d02f-4672-8bd3-e15e3e11dd8d",
+            "key": "geometry"
+          },
+          {
+            "jsonpathMapping": "",
+            "type": "text",
+            "id": "3fa3f958-6d42-47ec-b7d3-9993d97f2bd2",
+            "key": "geometryType"
+          },
+          {
+            "jsonpathMapping": "",
+            "type": "text",
+            "id": "43125521-f668-49a4-afc7-b6cb3cf85f2f",
+            "key": "inSR"
+          },
+          {
+            "jsonpathMapping": "",
+            "type": "text",
+            "id": "74cb7ce5-db63-4249-afef-6edf0637d07a",
+            "key": "spatialRel"
+          },
+          {
+            "jsonpathMapping": "",
+            "type": "text",
+            "id": "d6626fd0-4aa4-4b5b-bc07-f288bad63054",
+            "key": "outFields"
+          },
+          {
+            "jsonpathMapping": "",
+            "type": "text",
+            "id": "e28d756b-8dd7-44da-a4b2-f8f5cd86132d",
+            "key": "returnGeometry"
+          },
+          {
+            "jsonpathMapping": "",
+            "type": "text",
+            "id": "9d3a4184-4efd-4e1c-839a-c86f5c47fe71",
+            "key": "outSR"
+          }
+        ],
+        "reqBodyType": "form"
+      }
+    },
+    "ports": {
+      "items": [
+        {
+          "id": "029fda23-b761-4c67-8a58-184758517e65"
+        },
+        {
+          "id": "4e4d22b5-1bc0-4863-ae41-45a9713eedb5"
+        }
+      ]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400142",
+    "id": "e21328c0-b4cf-4d11-8c09-50f546e60949"
+  },
+  {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [
+          {
+            "jsonpathMapping": "",
+            "type": "string",
+            "id": "2de1b6d7-5164-40ac-a4a5-e20b65d066c6",
+            "key": "id"
+          },
+          {
+            "jsonpathMapping": "",
+            "type": "string",
+            "id": "27cb4568-4278-4740-a2b4-6ed63c12ba61",
+            "key": "name"
+          }
+        ],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [
+        {
+          "id": "76aabc97-193e-456a-b852-6075e15cd82e"
+        },
+        {
+          "id": "973189ec-d5c0-4352-ba7e-8a426c0311ff"
+        }
+      ]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400143",
+    "id": "67d4deff-3756-4858-b199-ad42efae827e"
+  }
+]

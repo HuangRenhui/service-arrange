@@ -10,9 +10,9 @@
     <packaging>pom</packaging>
     <description>
         dag json 调度的项目：
-            服务编排（http调度）；
-            dag调度（http、py、sql、spark、shell、yarn插件化调度算子包）；
-            算子包插件；
+        服务编排（http调度）；
+        dag调度（http、py、sql、spark、shell、yarn插件化调度算子包）；
+        算子包插件；
     </description>
     <modules>
         <module>servicearrange</module>
@@ -30,8 +30,11 @@
         <eureka.version>2.1.3.RELEASE</eureka.version>
         <apollo.version>1.8.0</apollo.version>
         <servletapi.version>4.0.1</servletapi.version>
+        <!--  设置编码格式，防止主程序启动报  java.nio.charset.MalformedInputException: Input length = 1  -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     </properties>
-
 
 
 </project>
