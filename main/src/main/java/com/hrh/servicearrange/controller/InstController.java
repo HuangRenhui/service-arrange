@@ -28,6 +28,8 @@ import org.springframework.web.multipart.support.StandardMultipartHttpServletReq
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URLEncoder;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -159,7 +161,65 @@ public class InstController {
             //mq发送开始运行
             taskProductor.sendTaskResult(task);
         }
-        return null;
+        boolean returnOutPuts = false;
+        //设置实例运行返回结果的状态
+        responseVo.setState(inst.getState());
+        if (instRunParamsVo.getOptType().equalsIgnoreCase("get_result")) {
+            Inst stateInst = instDao.findStateById(inst.getId());
+            if (!Inst.STATE_SUCCESS.equals(stateInst.getState())) {
+                throw new RuntimeException("实例还未运行成功，无输出信息！");
+            } else {
+                returnOutPuts = true;
+            }
+        }
+        Object respResult = inst.getId();
+        if (returnOutPuts) {
+            responseVo.setState(Inst.STATE_SUCCESS);
+            Inst resultInst = instDao.findOutputsById(inst.getId());
+            Task.Result outputs = resultInst.getOutputs();
+            //设置请求返回结果
+            if (outputs != null) {
+                responseVo.getOutputs().setContentType(outputs.getContentType());
+                responseVo.getOutputs().setHeaderParams(outputs.getHeaderParams());
+                responseVo.getOutputs().setJsonSchema(outputs.getJsonSchema());
+                response.setCharacterEncoding("UTF-8");
+                if (!StringUtils.isEmpty(outputs.getContentType()) && (outputs.getContentType().equals("application/json") || outputs.getContentType().equals("text/plain"))) {
+                    if (outputs.getContentType().equals("application/json")) {
+                        if (JSONUtil.isJsonObj(outputs.getValue())) {
+                            respResult = JSONUtil.parseObj(outputs.getValue());
+                        } else if (JSONUtil.isJsonArray(outputs.getValue())) {
+                            respResult = JSONUtil.parseArray(outputs.getValue());
+                        } else {
+                            respResult = outputs.getValue();
+                        }
+                        response.setContentType(outputs.getContentType());
+                    }
+                } else {
+                    //文件
+                    InputStream inputStream = null;
+                    OutputStream outputStream = null;
+                    String fileName = null;
+                    String filePath = outputs.getValue();
+                    if (filePath.startsWith("filemgr://")) {
+                        fileName = FileUtil.getName(filePath);
+                    }
+                    response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));
+                    if (StringUtils.isEmpty(outputs.getContentType())) {
+                        response.setContentType("application/octet-stream");
+                    } else {
+                        response.setContentType(outputs.getContentType());
+                    }
+                    response.setCharacterEncoding("UTF-8");
+                    if (filePath.startsWith("filemgr://")) {
+                        //文件下载
+                        //获取文件inputStream流
+                        //OutputStream流输出：write、flush
+                        //关闭流
+                    }
+                }
+            }
+        }
+        return respResult;
     }
 
     //处理请求的body参数值
