@@ -130,7 +130,10 @@ public class DslParser {
         //开始节点：隐藏开始节点-真正开始节点的父子、子父关系
         String startId = cells.stream().filter(c -> CellType.START.equals(c.getCellType())).findFirst().get().getId();
         Set<String> rootIds = roots.stream().map(Cell::getId).collect(Collectors.toSet());
-        nodeChildsMap.put(startId, rootIds);
+        rootIds = rootIds.stream().filter(id -> !startId.equals(id)).collect(Collectors.toSet());
+        if(!rootIds.isEmpty()) {
+            nodeChildsMap.put(startId, rootIds);
+        }
         Set<String> startSet = new HashSet<>();
         startSet.add(startId);
         rootIds.stream().forEach(i -> nodeParentsMap.put(i, startSet));
