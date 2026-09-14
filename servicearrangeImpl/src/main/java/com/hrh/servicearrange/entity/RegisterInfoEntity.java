@@ -1,11 +1,7 @@
 package com.hrh.servicearrange.entity;
 
 import lombok.Data;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
-
-import java.util.Date;
 
 /**
  * @author hrh
@@ -13,13 +9,11 @@ import java.util.Date;
 
 @Data
 @Document(collection = RegisterInfoEntity.TABLE_NAME)
-public class RegisterInfoEntity {
+public class RegisterInfoEntity extends BaseEntity {
 
     private static final long serialVersionUID = -1494149505348040159L;
     public static final String TABLE_NAME = "REGISTER_INFO";
-    @Id
-    @Field("id")
-    private String id;
+
     /**
      * 类型格式，http、rpc等
      */
@@ -108,13 +102,5 @@ public class RegisterInfoEntity {
      */
     private String sheelFtpPath;
 
-    /**
-     * 创建时间
-     */
-    private Date createDate;
-    /**
-     * 修改时间
-     */
-    private Date modifyDate;
 
 }
