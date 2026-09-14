@@ -1,5 +1,6 @@
 package com.hrh.servicearrange.parser;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -43,6 +44,12 @@ public class DslParser {
         return result;
     }
 
+    public static void main(String[] args) {
+        String s = FileUtil.readUtf8String("D:\\projectManager\\dagproject\\servicearrange\\main\\src\\main\\resources\\hrh_http.json");
+        System.out.println(s);
+        DslParser dslParser = new DslParser();
+        dslParser.parser(s);
+    }
     public Inst parser(String dslStr) {
         DSL dsl = JSONUtil.toBean(dslStr, DSL.class);
         System.out.println("dsl：" + JSONUtil.toJsonStr(dsl));
@@ -67,10 +74,11 @@ public class DslParser {
                 .map(Cell::getId)
                 .distinct().collect(Collectors.toSet());
         System.out.println("independs：" + JSONUtil.toJsonStr(independs));
-        //获取根节点：画布中实际的根节点（开始节点隐藏）
+        //获取根节点：画布中实际的根节点（开始节点隐藏）,根据edges的线的source集合和target集合
+        //有3个算子（1,2,3）2条线（1-2,2-3），src是（1,2），tar是（2,3），将src中的到tar去重，剩下1就是真正的开始节点
         List<Cell> roots = cells.stream().filter(n -> srcNodeIds.contains(n.getId())).filter(n -> !tarNodeIds.contains(n.getId())).collect(Collectors.toList());
         System.out.println("roots：" + JSONUtil.toJsonStr(roots));
-        //获取结束节点：画布中实际结束的节点（结束节点隐藏）
+        //获取结束节点：画布中实际结束的节点（结束节点隐藏），跟上面一样，将tar中的到src去重，剩下3就是真正的结束节点
         List<Cell> ends = cells.stream().filter(n -> tarNodeIds.contains(n.getId())).filter(n -> !srcNodeIds.contains(n.getId())).collect(Collectors.toList());
         System.out.println("ends：" + JSONUtil.toJsonStr(ends));
         //父子节点关系

@@ -1,7 +1,21 @@
+解析dsl：
+    分析真正的开始、结束节点
+    组成父子关系节点nodeChildsMap（当前节点 与 下一个节点 关系）
+    子父关系nodeParentsMap是为了决策线的使用（循环性），需要向上溯源父节点
 startId：
-    taskProductor.sendTaskResult(task);
-    TaskResultConsumer#run 转换成task任务
-    TaskProductor#sendTaskRun
-    taskRunConsumer.run 消费task任务
-    taskProductor.sendTaskResult 消费完记录任务状态
-    TaskResultConsumer#run继续下一个节点
+    1.taskProductor.sendTaskResult(task);
+    2.TaskResultConsumer#run 转换成task任务
+        获取当前节点的强组合、循环线
+        当前任务失败，有强组合则进行强组合（补偿算子，进入3）
+        跳过或成功，进入下一节点，当前节点有循环线doWhile判断，则进入循环
+        进入循环线，重新梳理节点，之前运行过的节点状态重置，循环性的头节点开始运行
+        没有循环性或结束循环了，当前节点是结束节点，则结束流程
+        否则获取下一节点，根据父子关系获取下一节点
+        判断下一节点有whileDo循环性，判断是否需要循环，当不需要循环（不符合条件），去除循环节点，
+        从循环节点的下一节点运行，
+        遍历下一节点
+
+    3.TaskProductor#sendTaskRun
+    4.taskRunConsumer.run 消费task任务
+    5.taskProductor.sendTaskResult 消费完记录任务状态
+    6.TaskResultConsumer#run继续下一个节点
