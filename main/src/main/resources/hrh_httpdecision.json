@@ -4,7 +4,7 @@
         "cellType": "node_start",
         "id": "2d557d74-09ee-447b-bd4a-1e7b92da7202",
         "data": {
-            "inputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}",
+            "inputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"X-AToken\":{\"type\":\"string\"},\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}",
             "globals": [{
                 "name": "类别",
                 "key": "wftype",
@@ -27,7 +27,7 @@
             "data": {
                 "parentsOutputs": [{
                     "contentType": "application/json",
-                    "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}"
+                    "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"X-AToken\":{\"type\":\"string\"},\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}"
                 }],
                 "childInputs": {
                     "reqPath": null,
@@ -36,7 +36,7 @@
                         "name": "1",
                         "key": "X-AToken",
                         "type": "Content-Type",
-                        "jsonpathMapping": "#header_$X-AToken"
+                        "jsonpathMapping": "#start_$X-AToken"
                     }],
                     "reqBodyForm": null,
                     "reqBodyJson": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\",\"jsonpathMapping\":\"\"},\"name\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$name\"},\"wftype\":{\"type\":\"number\",\"jsonpathMapping\":\"#start$wftype\"},\"gpid\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$gpid\"},\"comment\":{\"type\":\"string\",\"jsonpathMapping\":\"\"}}}"
@@ -74,7 +74,7 @@
             ],
             "data": {
                 "protocol": "http",
-                "url": "http://192.168.20.9/timingmgr/task/findTree",
+                "url": "http://192.168.10.126/timingmgr/task/findTree",
                 "requestType": "GET",
                 "outputs": {
                     "contentType": "application/json",
@@ -84,7 +84,10 @@
                     "reqPath": null,
                     "reqQuery": null,
                     "reqHeaders": [{
-                        "key": "X-AToken"
+                        "name": "1",
+                        "key": "X-AToken",
+                        "type": "Content-Type",
+                        "jsonpathMapping": "#start_$X-AToken"
                     }],
                     "reqBodyForm": null,
                     "bodyJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}"
@@ -117,6 +120,36 @@
                 "port": "9e2cb661-5863-4a7f-95cc-471ffed63283"
             },
             "target": {
+                "cell": "9d12c240-09c0-4000-ba47-fe152c65430a",
+                "port": "55d98b0c-b1da-4fb6-98c6-0cdd0363e45c"
+            }
+        },
+        {
+            "name": "决策1",
+            "cellType": "node_inner_decision",
+            "id": "9d12c240-09c0-4000-ba47-fe152c65430a",
+            "data": {
+                "jsonpathElexpression": "#pro_500be83a-9818-4bf7-b373-b4569a4f49f8$.list[0].id+#pro_500be83a-9818-4bf7-b373-b4569a4f49f8$.list[0].id"
+            },
+            "ports": {
+                "items": [{
+                    "id": "4af25de3-a85e-4991-8597-f4d3c3f7211d"
+                },
+                    {
+                        "id": "887ded2f-b367-4438-adf1-007904b0d42f"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "e18-pt",
+            "cellType": "edge_common",
+            "id": "7891ce60-6991-45cc-bb91-efdad47748fa",
+            "source": {
+                "cell": "9d12c240-09c0-4000-ba47-fe152c65430a",
+                "port": "edab2eb3-ecac-4ffc-9d1e-eb183eefa1d9"
+            },
+            "target": {
                 "cell": "f424c6c8-8ca5-413d-bda2-1352b1f90dca",
                 "port": "542d909e-229d-46d5-a9ab-72e5a9e358a5"
             }
@@ -133,7 +166,7 @@
     ],
     "groups": [{
         "id": "fhc4c6c8-8ca5-413d-bda2-1352b1f90dca",
-        "name": "hrh-http",
+        "name": "hrh-decision",
         "type": "group_compensate"
     }]
 }
