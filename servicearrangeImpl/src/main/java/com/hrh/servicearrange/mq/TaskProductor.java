@@ -21,8 +21,6 @@ import java.io.IOException;
 @Component
 public class TaskProductor {
 
-    @Autowired
-    private MqChannelProcessor processor;
     @Value("${task.result_queue_name}")
     private String taskResult_queue_name;
     @Value("${task.run_queue_name}")

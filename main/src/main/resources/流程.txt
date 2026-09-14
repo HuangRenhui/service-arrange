@@ -1,0 +1,7 @@
+startId：
+    taskProductor.sendTaskResult(task);
+    TaskResultConsumer#run 转换成task任务
+    TaskProductor#sendTaskRun
+    taskRunConsumer.run 消费task任务
+    taskProductor.sendTaskResult 消费完记录任务状态
+    TaskResultConsumer#run继续下一个节点

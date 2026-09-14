@@ -74,7 +74,7 @@ public class InstController {
         if (contentType.contains("multipart/form-data")) {
             standardMultipartHttpServletRequest = (StandardMultipartHttpServletRequest) request;
         } else {
-            throw new RuntimeException("请以ContentType=multipart/form-data进行POST提交！当前ContentType=" + contentType);
+//            throw new RuntimeException("请以ContentType=multipart/form-data进行POST提交！当前ContentType=" + contentType);
         }
         InstRunParamsVo instRunParamsVo = new InstRunParamsVo();
         String dslStr = FileUtil.readUtf8String("hrh_http.json");

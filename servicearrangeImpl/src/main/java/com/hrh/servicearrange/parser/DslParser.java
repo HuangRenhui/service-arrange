@@ -131,7 +131,7 @@ public class DslParser {
         String startId = cells.stream().filter(c -> CellType.START.equals(c.getCellType())).findFirst().get().getId();
         Set<String> rootIds = roots.stream().map(Cell::getId).collect(Collectors.toSet());
         rootIds = rootIds.stream().filter(id -> !startId.equals(id)).collect(Collectors.toSet());
-        if(!rootIds.isEmpty()) {
+        if (!rootIds.isEmpty()) {
             nodeChildsMap.put(startId, rootIds);
         }
         Set<String> startSet = new HashSet<>();
@@ -161,7 +161,11 @@ public class DslParser {
             //dsl的强组合节点
             Map<String, Group> groupMap = groups.stream().collect(Collectors.toMap(Group::getId, g -> g));
             //节点的强组合映射
-            cells.stream().forEach(c -> c.getGroupIds().stream().forEach(gid -> groupMap.get(gid).getNodes().add(c.getId())));
+            cells.stream().forEach(c -> {
+                if (c.getGroupIds() != null) {
+                    c.getGroupIds().stream().forEach(gid -> groupMap.get(gid).getNodes().add(c.getId()));
+                }
+            });
             //组装强组合id和对应节点关系
             groups = groupMap.entrySet().stream().map(e -> e.getValue()).collect(Collectors.toList());
         }

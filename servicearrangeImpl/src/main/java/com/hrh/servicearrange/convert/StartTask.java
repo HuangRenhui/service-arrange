@@ -25,7 +25,7 @@ public class StartTask implements TaskInterface {
         task.getOutputs().setJsonSchema(startCell.getData().getInputsJsonSchema());
         task.getOutputs().setValue(inst.getDslInputParams());
         task.getOutputs().setHeaderParams(inst.getHeaderParams());
-        task.setState(Task.STATE_WAITE);
+        task.setState(Task.STATE_SUCCESS);
         Date date = new Date();
         task.setStartDate(date);
         task.setEndDate(date);

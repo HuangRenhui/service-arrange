@@ -10,7 +10,6 @@ import com.hrh.servicearrange.entity.NodeLoopInfo;
 import com.hrh.servicearrange.entity.Task;
 import com.hrh.servicearrange.executor.Execute;
 import com.hrh.servicearrange.parser.annotation.CellType;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -51,6 +50,7 @@ public class StartOperateExecutor implements Execute {
         }
         return task;
     }
+
     //获取所有id的数据
     public void getDataByNodeIds(Task task, Inst inst, TaskDao taskDao, String inputs, JSONObject pouts) {
         String[] id1s = StrUtil.subBetweenAll(inputs, "#pno_", "$");

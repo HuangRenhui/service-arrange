@@ -330,6 +330,7 @@ public class TaskResultConsumer {
                                 finalNextIds.remove(j);
                                 nodeChildsMap.get(inLoopWhileDoEdges.get(0).getSource().getCell()).stream().forEach(i -> whileDoNextIds.add(i));
                             } else {
+                                //循环次数+1
                                 NodeLoopInfo nli = inst.getLoopRunTimesMap().get(outLoopEdges.get(0).getId());
                                 nli.setTimes(nli.getTimes() + 1);
                                 inst.getLoopRunTimesMap().put(outLoopEdges.get(0).getId(), nli);
