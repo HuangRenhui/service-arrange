@@ -1,0 +1,721 @@
+{
+    "_id" : "6233fdccf7b1a7850414e0a1",
+    "planId" : "38e13825-57d5-425e-9016-b8d3dc541a63",
+    "dsl" : "{\"groups\":[],\"cells\":[{\"source\":{\"cell\":\"8501e25d-04b7-4946-9a9f-0f768964453e\",\"port\":\"8c4ed63f-bcf3-4b67-a204-5a439852a17d\"},\"target\":{\"cell\":\"7e54be78-83ca-485c-865f-920a36548949\",\"port\":\"0aaa427a-db6d-4a62-9237-1e75fc60bad2\"},\"cellType\":\"edge_common\",\"name\":\"普通线\",\"id\":\"e32d9395-838e-4301-9173-ed1bf8d04614\"},{\"source\":{\"cell\":\"bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155\",\"port\":\"2929213e-de6e-41b0-96f9-1b26e81ebefe\"},\"target\":{\"cell\":\"a31e2d6b-ff7e-4454-8b2c-00ac90ed823a\",\"port\":\"ced48012-960d-42a5-952e-37b610f4efa8\"},\"cellType\":\"edge_common\",\"name\":\"普通线\",\"id\":\"f777bc83-cbef-4fcb-89ea-eeebc653a4f4\"},{\"source\":{\"cell\":\"7e54be78-83ca-485c-865f-920a36548949\",\"port\":\"353df667-a285-46a7-b3a8-e78ca4435a20\"},\"target\":{\"cell\":\"519143d1-ef96-4094-bc05-64d77748fc88\",\"port\":\"bba3eb03-ae6a-4440-9ab3-cd02e6a48156\"},\"cellType\":\"edge_common\",\"name\":\"普通线\",\"id\":\"e370c291-f885-49e0-b95a-8276aedd6d20\"},{\"source\":{\"cell\":\"519143d1-ef96-4094-bc05-64d77748fc88\",\"port\":\"ec5d6b7d-4a50-4bb3-9318-a7fcada10c70\"},\"target\":{\"cell\":\"a2574690-e4b7-47f9-9f21-bc18011f593e\",\"port\":\"cce7df23-922f-481a-b7d3-bf0612409e9e\"},\"cellType\":\"edge_common\",\"name\":\"普通线\",\"id\":\"cbab17cf-39f7-4934-932f-9e1bd7fb8a2c\"},{\"data\":{\"conditionData\":[{\"LselcetId\":\"28414277-e374-461b-a249-a86f0bfc6fcd\",\"type\":\"number\",\"LType\":\"nodeClick\",\"condition\":\"<=\",\"RselectId\":\"58ab713d-7e07-4928-917a-df57afad2d54\",\"id\":\"3313e84c-fc66-4a86-a716-03ecb99b5d3b\",\"logic\":\"none\",\"Rjsonpath\":\"#dynamicParams_$idx\",\"Ljsonpath\":\"#dynamicParams_$length\"}],\"L\":[\"#dynamicParams_$length\"],\"R\":[\"#dynamicParams_$idx\"],\"jsonpathElexpression\":\"R0<=L0\",\"cycleInfo\":{\"jsonpathSelect\":\"#dynamicParams_$idx\",\"rule\":\"+\",\"type\":\"doWhile\",\"stepLength\":1,\"selectId\":\"58ab713d-7e07-4928-917a-df57afad2d54\"}},\"source\":{\"cell\":\"a31e2d6b-ff7e-4454-8b2c-00ac90ed823a\",\"port\":\"5846de18-8573-4ff4-8ca3-ddddb36ba5fe\"},\"target\":{\"cell\":\"519143d1-ef96-4094-bc05-64d77748fc88\",\"port\":\"025c9e65-6801-4236-8e55-9d9c1d80e120\"},\"cellType\":\"edge_loop\",\"name\":\"循环线\",\"id\":\"2c8ff9be-32c1-45f5-8bb4-ae39ec307e9c\"},{\"data\":{\"outputs\":{\"outputsJsonSchema\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"res\\\":{\\\"type\\\":\\\"integer\\\"},\\\"resMsg\\\":{\\\"type\\\":\\\"string\\\"},\\\"result\\\":{\\\"type\\\":\\\"array\\\",\\\"items\\\":{}},\\\"stackTrace\\\":{\\\"type\\\":\\\"string\\\"}}}\",\"contentType\":\"application/json\"},\"requestType\":\"POST\",\"inputs\":{\"reqBodyType\":\"form\",\"reqHeaders\":[{\"jsonpathMapping\":\"#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authentication-Username\",\"defaultValue\":\"nfsmUser\\t\",\"key\":\"Authentication-Username\"},{\"jsonpathMapping\":\"#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authorization-Server-Token\",\"defaultValue\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTk2ODYyNDIsInVzZXJuYW1lIjoibmZzbVVzZXIifQ.UJivwhO5xBt5RoMugRdeqLgN8t8wbldn2cqYXOdIAgM\",\"key\":\"Authorization-Server-Token\"},{\"jsonpathMapping\":\"#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authentication-Secret\",\"defaultValue\":\"123456\",\"key\":\"Authentication-Secret\"},{\"jsonpathMapping\":\"#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Accept\",\"defaultValue\":\"application/json\",\"key\":\"Accept\"}],\"reqQuery\":[],\"reqBodyOther\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{}}\",\"reqBodyForm\":[{\"jsonpathMapping\":\"#start_$file\",\"type\":\"file\",\"id\":\"46b3b86d-22f1-41ed-a1d1-835c433ccebe\",\"key\":\"uploadFile\"},{\"jsonpathMapping\":\"#staticParams_$text\",\"type\":\"text\",\"id\":\"0967255e-7f5d-49f2-84ac-5e67b43f7bd9\",\"key\":\"format\"}]},\"url\":\"http://192.168.10.163:3000/mock/1206/mock/28e285d0c58f3650a81c6e072ec07498/yunnan/coordinateCheck/coordinateCheckTxtFile\",\"protocol\":\"restful\",\"registeredOperatorId\":\"c44086ee-f09e-4e9a-a5ae-612171c194b5\"},\"ports\":{\"items\":[{\"id\":\"2c4a841b-de94-4458-b8c0-8bed3ba8bda5\"},{\"id\":\"8c4ed63f-bcf3-4b67-a204-5a439852a17d\"},{\"id\":\"62411d95-0742-4e55-8ea9-2bac767f7f84\"},{\"id\":\"5b96c143-a6f6-40f9-a2e4-f927e19eef7f\"},{\"id\":\"15acbeb5-0ba9-4408-a08b-c52f3531a63c\"}]},\"cellType\":\"node_outer_http\",\"name\":\"坐标检查\",\"id\":\"8501e25d-04b7-4946-9a9f-0f768964453e\"},{\"ports\":{\"items\":[{\"id\":\"0aaa427a-db6d-4a62-9237-1e75fc60bad2\"},{\"id\":\"353df667-a285-46a7-b3a8-e78ca4435a20\"},{\"id\":\"f03503a1-4d06-41bf-8c02-632d29b82904\"},{\"id\":\"40381793-ff77-451a-abe6-7f34c4e03766\"}]},\"cellType\":\"node_inner_dataresult\",\"name\":\"输出分组1\",\"id\":\"7e54be78-83ca-485c-865f-920a36548949\"},{\"data\":{\"outputs\":{\"outputsJsonSchema\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"XI_TDYTQ_2020_CN2K\\\":{\\\"type\\\":\\\"array\\\",\\\"items\\\":{}},\\\"XI_JSYDGZQ_2020_CN2K\\\":{\\\"type\\\":\\\"array\\\",\\\"items\\\":{}},\\\"XI_TDGHDL_2020_CN2K\\\":{\\\"type\\\":\\\"array\\\",\\\"items\\\":{}}}}\",\"contentType\":\"application/json\"},\"requestType\":\"POST\",\"inputs\":{\"reqBodyType\":\"json\",\"reqHeaders\":[{\"jsonpathMapping\":\"\",\"defaultValue\":\"nfsmUser\",\"key\":\"Authentication-Username\"},{\"jsonpathMapping\":\"\",\"defaultValue\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTk2ODYyNDIsInVzZXJuYW1lIjoibmZzbVVzZXIifQ.UJivwhO5xBt5RoMugRdeqLgN8t8wbldn2cqYXOdIAgM\",\"key\":\"Authorization-Server-Token\"},{\"jsonpathMapping\":\"\",\"defaultValue\":\"123456\",\"key\":\" Authentication-Secret\"},{\"jsonpathMapping\":\"\",\"defaultValue\":\"application/json\",\"key\":\"Accept\"}],\"reqQuery\":[],\"reqBodyOther\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"inputData\\\":{\\\"type\\\":\\\"object\\\"},\\\"WKID\\\":{\\\"jsonpathMapping\\\":\\\"\\\",\\\"type\\\":\\\"number\\\"},\\\"sumArea\\\":{\\\"jsonpathMapping\\\":\\\"\\\",\\\"type\\\":\\\"boolean\\\"},\\\"returnIntersection\\\":{\\\"jsonpathMapping\\\":\\\"\\\",\\\"type\\\":\\\"boolean\\\"},\\\"queryDataList\\\":{\\\"jsonpathMapping\\\":\\\"\\\",\\\"type\\\":\\\"array\\\",\\\"items\\\":{}}}}\",\"reqBodyForm\":[]},\"url\":\"http://192.168.10.163:3000/mock/1206/mock/28e285d0c58f3650a81c6e072ec07498/yunnan/kjfx/ht-discovery/server-rpc/s17-jsydxmqsdlfx-4e9a321b5648f9456626b6ea8fe7d85e\",\"protocol\":\"restful\",\"registeredOperatorId\":\"1379d457-92bd-41bf-9d67-d556cc0345d8\"},\"ports\":{\"items\":[{\"id\":\"e531ddce-7028-4477-a88f-b4640ce87e0a\"},{\"id\":\"2929213e-de6e-41b0-96f9-1b26e81ebefe\"},{\"id\":\"ed06c4f4-1091-412d-b7f4-eb897887d13c\"},{\"id\":\"e24e8a7d-bb7f-44b8-aee2-39d48bea09f7\"}]},\"cellType\":\"node_outer_http\",\"name\":\"合规性分析\",\"id\":\"bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155\"},{\"ports\":{\"items\":[{\"id\":\"ced48012-960d-42a5-952e-37b610f4efa8\"},{\"id\":\"0860f58e-4169-4174-9d05-c4ebe801d14b\"},{\"id\":\"5846de18-8573-4ff4-8ca3-ddddb36ba5fe\"},{\"id\":\"c577b9dc-98d4-47b4-afa1-0f2cf2bd8bda\"}]},\"cellType\":\"node_inner_dataresult\",\"name\":\"输出分组1\",\"id\":\"a31e2d6b-ff7e-4454-8b2c-00ac90ed823a\"},{\"data\":{\"transformRules\":[{\"jsonpathMapping\":\"#pno_8501e25d-04b7-4946-9a9f-0f768964453e$result\",\"type\":\"getLength\",\"key\":\"length\"},{\"jsonpathMapping\":\"#pno_8501e25d-04b7-4946-9a9f-0f768964453e$result\",\"idxSelectId\":\"58ab713d-7e07-4928-917a-df57afad2d54\",\"type\":\"aryDeal\",\"inputValue\":\"targetGeojson\",\"idx\":\"#dynamicParams_$idx\",\"key\":\"inputData\"}]},\"cellType\":\"node_inner_transform2Obj\",\"name\":\"数据处理\",\"id\":\"519143d1-ef96-4094-bc05-64d77748fc88\"},{\"data\":{\"requestMethod\":\"POST\",\"inputsJsonSchema\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"file\\\":{\\\"type\\\":\\\"file\\\"}}}\"},\"cellType\":\"node_start\",\"name\":\"开始\",\"id\":\"c4bd3e5a-a9e0-463d-aef0-4ca44403a006\"},{\"data\":{\"outputsJsonSchema\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{}}\",\"contentType\":\"application/json\"},\"cellType\":\"node_end\",\"name\":\"结束\",\"id\":\"31951f64-e370-4950-ad0b-53c4c139c6c1\"},{\"data\":{\"staticParams\":[{\"lastNodeOutputs\":\"\",\"type_name\":\"string\",\"type\":\"string\",\"default\":\"111\",\"default_name\":\"111\",\"children\":null,\"name_name\":\"text\",\"name\":\"text\",\"id\":\"b5269cb9-47ef-45fc-bf7d-cf6be3a88cd6\"},{\"lastNodeOutputs\":\"\",\"type_name\":\"number\",\"type\":\"number\",\"default\":\"4490\",\"default_name\":\"4490\",\"children\":null,\"name_name\":\"WKID\",\"name\":\"WKID\",\"id\":\"96619de9-20b2-4ccd-94fa-18df309c6e67\"},{\"lastNodeOutputs\":\"\",\"type_name\":\"array\",\"type\":\"array\",\"default\":\"[\\\"XI_TDGHDL_2020_CN2K\\\",\\\"XI_JSYDGZQ_2020_CN2K\\\",\\\"XI_TDYTQ_2020_CN2K\\\"]\",\"default_name\":\"[\\\"XI_TDGHDL_2020_CN2K\\\",\\\"XI_JSYDGZQ_2020_CN2K\\\",\\\"XI_TDYTQ_2020_CN2K\\\"]\",\"children\":[{\"_treeExpanded\":true,\"id\":\"9f8d7a7a-c790-439e-847d-dd916855bd37\",\"_name_disabled\":true}],\"name_name\":\"queryDataList\",\"name\":\"queryDataList\",\"id\":\"5ae7d9f0-d93e-4551-86e9-9fe297e2da0a\"},{\"lastNodeOutputs\":\"\",\"type_name\":\"boolean\",\"type\":\"boolean\",\"default\":\"true\",\"default_name\":\"true\",\"children\":null,\"name_name\":\"sumArea\",\"name\":\"sumArea\",\"id\":\"3f6d48bf-7b1b-40fc-a112-740b0ffcde40\"},{\"lastNodeOutputs\":\"\",\"type_name\":\"boolean\",\"type\":\"boolean\",\"default\":\"true\",\"default_name\":\"true\",\"children\":null,\"name_name\":\"returnIntersection\",\"name\":\"returnIntersection\",\"id\":\"44b2ffb3-9e62-4da6-b0c1-26e357b9ac31\"}],\"dynamicParams\":[{\"type_name\":\"number\",\"desc_name\":\"\",\"type\":\"number\",\"name_name\":\"length\",\"name\":\"length\",\"sourceName_name\":\"length\",\"nodeKey\":18,\"id\":\"28414277-e374-461b-a249-a86f0bfc6fcd\",\"sourceName\":\"length\",\"selected\":false,\"desc\":\"\"},{\"lastNodeOutputs\":\"\",\"type_name\":\"number\",\"type\":\"number\",\"title\":\"\",\"default\":\"0\",\"default_name\":\"0\",\"children\":null,\"name_name\":\"idx\",\"name\":\"idx\",\"nodeKey\":19,\"id\":\"58ab713d-7e07-4928-917a-df57afad2d54\",\"title_name\":\"\",\"selected\":false}]},\"cellType\":\"global_Data\",\"name\":\"全局参数\",\"id\":\"509ce4c2-3e79-405f-9b7f-087cded9bb7c\"},{\"data\":{\"childInputs\":{\"reqHeaders\":[{\"jsonpathMapping\":\"\",\"defaultValue\":\"nfsmUser\",\"key\":\"Authentication-Username\"},{\"jsonpathMapping\":\"\",\"defaultValue\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTk2ODYyNDIsInVzZXJuYW1lIjoibmZzbVVzZXIifQ.UJivwhO5xBt5RoMugRdeqLgN8t8wbldn2cqYXOdIAgM\",\"key\":\"Authorization-Server-Token\"},{\"jsonpathMapping\":\"\",\"defaultValue\":\"123456\",\"key\":\" Authentication-Secret\"},{\"jsonpathMapping\":\"\",\"defaultValue\":\"application/json\",\"key\":\"Accept\"}],\"reqQuery\":[],\"reqBodyOther\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"inputData\\\":{\\\"type\\\":\\\"object\\\"},\\\"WKID\\\":{\\\"jsonpathMapping\\\":\\\"\\\",\\\"type\\\":\\\"number\\\"},\\\"sumArea\\\":{\\\"jsonpathMapping\\\":\\\"\\\",\\\"type\\\":\\\"boolean\\\"},\\\"returnIntersection\\\":{\\\"jsonpathMapping\\\":\\\"\\\",\\\"type\\\":\\\"boolean\\\"},\\\"queryDataList\\\":{\\\"jsonpathMapping\\\":\\\"\\\",\\\"type\\\":\\\"array\\\",\\\"items\\\":{}}}}\",\"reqBodyForm\":[],\"reqBodyType\":\"json\"}},\"ports\":{\"items\":[{\"id\":\"cce7df23-922f-481a-b7d3-bf0612409e9e\"},{\"id\":\"0d32170c-a08c-4095-93a4-fb9124d9176b\"}]},\"cellType\":\"node_inner_datamap\",\"name\":\"数据映射1647486120649\",\"id\":\"a2574690-e4b7-47f9-9f21-bc18011f593e\"},{\"source\":{\"cell\":\"a2574690-e4b7-47f9-9f21-bc18011f593e\",\"port\":\"0d32170c-a08c-4095-93a4-fb9124d9176b\"},\"target\":{\"cell\":\"bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155\",\"port\":\"e531ddce-7028-4477-a88f-b4640ce87e0a\"},\"cellType\":\"edge_common\",\"name\":\"普通线1647486120807\",\"id\":\"ca6cebc1-56af-4e60-8fe2-9d11de9920b0\"},{\"data\":{\"childInputs\":{\"reqHeaders\":[{\"jsonpathMapping\":\"#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authentication-Username\",\"defaultValue\":\"nfsmUser\\t\",\"key\":\"Authentication-Username\"},{\"jsonpathMapping\":\"#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authorization-Server-Token\",\"defaultValue\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTk2ODYyNDIsInVzZXJuYW1lIjoibmZzbVVzZXIifQ.UJivwhO5xBt5RoMugRdeqLgN8t8wbldn2cqYXOdIAgM\",\"key\":\"Authorization-Server-Token\"},{\"jsonpathMapping\":\"#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authentication-Secret\",\"defaultValue\":\"123456\",\"key\":\"Authentication-Secret\"},{\"jsonpathMapping\":\"#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Accept\",\"defaultValue\":\"application/json\",\"key\":\"Accept\"}],\"reqQuery\":[],\"reqBodyOther\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{}}\",\"reqBodyForm\":[{\"jsonpathMapping\":\"#start_$file\",\"type\":\"file\",\"id\":\"46b3b86d-22f1-41ed-a1d1-835c433ccebe\",\"key\":\"uploadFile\"},{\"jsonpathMapping\":\"#staticParams_$text\",\"type\":\"text\",\"id\":\"0967255e-7f5d-49f2-84ac-5e67b43f7bd9\",\"key\":\"format\"}],\"reqBodyType\":\"form\"}},\"ports\":{\"items\":[{\"id\":\"88431fca-e75e-438e-b112-450fd7800c77\"}]},\"cellType\":\"node_inner_datamap\",\"name\":\"数据映射1647486120808\",\"id\":\"e75d01ee-7ce7-4558-bf5a-f4097764945e\"},{\"source\":{\"cell\":\"e75d01ee-7ce7-4558-bf5a-f4097764945e\",\"port\":\"88431fca-e75e-438e-b112-450fd7800c77\"},\"target\":{\"cell\":\"8501e25d-04b7-4946-9a9f-0f768964453e\",\"port\":\"15acbeb5-0ba9-4408-a08b-c52f3531a63c\"},\"cellType\":\"edge_common\",\"name\":\"普通线1647486120816\",\"id\":\"badcd162-5ac0-474e-9805-6f51f7ef3724\"}]}",
+    "optType" : "run",
+    "sync" : true,
+    "dslInputParams" : "{}",
+    "headerParams" : {
+        "Authentication-Username" : "nfsmUser",
+        "Accept" : "application/json",
+        "Cache-Control" : "no-cache",
+        "User-Agent" : "PostmanRuntime/7.26.8",
+        "Connection" : "keep-alive",
+        "Authentication-Secret" : "123456",
+        "Postman-Token" : "9c26344d-a83e-4c1a-bcf7-0267e1252886",
+        "Host" : "127.0.0.1:8269",
+        "Accept-Encoding" : "gzip, deflate, br",
+        "Content-Length" : "0",
+        "Authorization-ServerToken" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTk2ODYyNDIsInVzZXJuYW1lIjoibmZzbVVzZXIifQ.UJivwhO5xBt5RoMugRdeqLgN8t8wbldn2cqYXOdIAgM",
+        "Content-Type" : "multipart/form-data"
+    },
+    "staticParams" : [
+        {
+            "lastNodeOutputs" : "",
+            "type_name" : "string",
+            "default" : "111",
+            "default_name" : "111",
+            "children" : null,
+            "name_name" : "text",
+            "name" : "text",
+            "id" : "b5269cb9-47ef-45fc-bf7d-cf6be3a88cd6",
+            "type" : "string"
+        },
+        {
+            "lastNodeOutputs" : "",
+            "type_name" : "number",
+            "default" : "4490",
+            "default_name" : "4490",
+            "children" : null,
+            "name_name" : "WKID",
+            "name" : "WKID",
+            "id" : "96619de9-20b2-4ccd-94fa-18df309c6e67",
+            "type" : "number"
+        },
+        {
+            "lastNodeOutputs" : "",
+            "type_name" : "array",
+            "default" : "[\"XI_TDGHDL_2020_CN2K\",\"XI_JSYDGZQ_2020_CN2K\",\"XI_TDYTQ_2020_CN2K\"]",
+            "default_name" : "[\"XI_TDGHDL_2020_CN2K\",\"XI_JSYDGZQ_2020_CN2K\",\"XI_TDYTQ_2020_CN2K\"]",
+            "children" : [
+                {
+                    "_treeExpanded" : true,
+                    "id" : "9f8d7a7a-c790-439e-847d-dd916855bd37",
+                    "_name_disabled" : true
+                }
+            ],
+            "name_name" : "queryDataList",
+            "name" : "queryDataList",
+            "id" : "5ae7d9f0-d93e-4551-86e9-9fe297e2da0a",
+            "type" : "array"
+        },
+        {
+            "lastNodeOutputs" : "",
+            "type_name" : "boolean",
+            "default" : "true",
+            "default_name" : "true",
+            "children" : null,
+            "name_name" : "sumArea",
+            "name" : "sumArea",
+            "id" : "3f6d48bf-7b1b-40fc-a112-740b0ffcde40",
+            "type" : "boolean"
+        },
+        {
+            "lastNodeOutputs" : "",
+            "type_name" : "boolean",
+            "default" : "true",
+            "default_name" : "true",
+            "children" : null,
+            "name_name" : "returnIntersection",
+            "name" : "returnIntersection",
+            "id" : "44b2ffb3-9e62-4da6-b0c1-26e357b9ac31",
+            "type" : "boolean"
+        }
+    ],
+    "dynamicParams" : [
+        {
+            "type_name" : "number",
+            "desc_name" : "",
+            "name_name" : "length",
+            "name" : "length",
+            "sourceName_name" : "length",
+            "nodeKey" : 18,
+            "id" : "28414277-e374-461b-a249-a86f0bfc6fcd",
+            "sourceName" : "length",
+            "type" : "number",
+            "selected" : false,
+            "desc" : ""
+        },
+        {
+            "lastNodeOutputs" : "",
+            "type_name" : "number",
+            "type" : "number",
+            "title" : "",
+            "default" : "0",
+            "default_name" : "0",
+            "children" : null,
+            "name_name" : "idx",
+            "name" : "idx",
+            "nodeKey" : 19,
+            "id" : "58ab713d-7e07-4928-917a-df57afad2d54",
+            "title_name" : "",
+            "selected" : false
+        }
+    ],
+    "nodeMap" : {
+        "badcd162-5ac0-474e-9805-6f51f7ef3724" : {
+            "_id" : "badcd162-5ac0-474e-9805-6f51f7ef3724",
+            "name" : "普通线1647486120816",
+            "source" : {
+                "cell" : "e75d01ee-7ce7-4558-bf5a-f4097764945e",
+                "port" : "88431fca-e75e-438e-b112-450fd7800c77"
+            },
+            "target" : {
+                "cell" : "8501e25d-04b7-4946-9a9f-0f768964453e",
+                "port" : "15acbeb5-0ba9-4408-a08b-c52f3531a63c"
+            },
+            "cellType" : "edge_common"
+        },
+        "7e54be78-83ca-485c-865f-920a36548949" : {
+            "_id" : "7e54be78-83ca-485c-865f-920a36548949",
+            "name" : "输出分组1",
+            "ports" : {
+                "items" : [
+                    {
+                        "_id" : "0aaa427a-db6d-4a62-9237-1e75fc60bad2"
+                    },
+                    {
+                        "_id" : "353df667-a285-46a7-b3a8-e78ca4435a20"
+                    },
+                    {
+                        "_id" : "f03503a1-4d06-41bf-8c02-632d29b82904"
+                    },
+                    {
+                        "_id" : "40381793-ff77-451a-abe6-7f34c4e03766"
+                    }
+                ]
+            },
+            "cellType" : "node_inner_dataresult"
+        },
+        "cbab17cf-39f7-4934-932f-9e1bd7fb8a2c" : {
+            "_id" : "cbab17cf-39f7-4934-932f-9e1bd7fb8a2c",
+            "name" : "普通线",
+            "source" : {
+                "cell" : "519143d1-ef96-4094-bc05-64d77748fc88",
+                "port" : "ec5d6b7d-4a50-4bb3-9318-a7fcada10c70"
+            },
+            "target" : {
+                "cell" : "a2574690-e4b7-47f9-9f21-bc18011f593e",
+                "port" : "cce7df23-922f-481a-b7d3-bf0612409e9e"
+            },
+            "cellType" : "edge_common"
+        },
+        "c4bd3e5a-a9e0-463d-aef0-4ca44403a006" : {
+            "_id" : "c4bd3e5a-a9e0-463d-aef0-4ca44403a006",
+            "name" : "开始",
+            "data" : {
+                "requestMethod" : "POST",
+                "inputsJsonSchema" : "{\"type\":\"object\",\"properties\":{\"file\":{\"type\":\"file\"}}}"
+            },
+            "cellType" : "node_start"
+        },
+        "ca6cebc1-56af-4e60-8fe2-9d11de9920b0" : {
+            "_id" : "ca6cebc1-56af-4e60-8fe2-9d11de9920b0",
+            "name" : "普通线1647486120807",
+            "source" : {
+                "cell" : "a2574690-e4b7-47f9-9f21-bc18011f593e",
+                "port" : "0d32170c-a08c-4095-93a4-fb9124d9176b"
+            },
+            "target" : {
+                "cell" : "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155",
+                "port" : "e531ddce-7028-4477-a88f-b4640ce87e0a"
+            },
+            "cellType" : "edge_common"
+        },
+        "519143d1-ef96-4094-bc05-64d77748fc88" : {
+            "_id" : "519143d1-ef96-4094-bc05-64d77748fc88",
+            "name" : "数据处理",
+            "data" : {
+                "transformRules" : [
+                    {
+                        "jsonpathMapping" : "#pno_8501e25d-04b7-4946-9a9f-0f768964453e$result",
+                        "type" : "getLength",
+                        "key" : "length"
+                    },
+                    {
+                        "jsonpathMapping" : "#pno_8501e25d-04b7-4946-9a9f-0f768964453e$result",
+                        "idxSelectId" : "58ab713d-7e07-4928-917a-df57afad2d54",
+                        "type" : "aryDeal",
+                        "inputValue" : "targetGeojson",
+                        "idx" : "#dynamicParams_$idx",
+                        "key" : "inputData"
+                    }
+                ]
+            },
+            "cellType" : "node_inner_transform2Obj"
+        },
+        "31951f64-e370-4950-ad0b-53c4c139c6c1" : {
+            "_id" : "31951f64-e370-4950-ad0b-53c4c139c6c1",
+            "name" : "结束",
+            "data" : {
+                "outputsJsonSchema" : "{\"type\":\"object\",\"properties\":{}}",
+                "contentType" : "application/json"
+            },
+            "cellType" : "node_end"
+        },
+        "8501e25d-04b7-4946-9a9f-0f768964453e" : {
+            "_id" : "8501e25d-04b7-4946-9a9f-0f768964453e",
+            "name" : "坐标检查",
+            "data" : {
+                "outputs" : {
+                    "outputsJsonSchema" : "{\"type\":\"object\",\"properties\":{\"res\":{\"type\":\"integer\"},\"resMsg\":{\"type\":\"string\"},\"result\":{\"type\":\"array\",\"items\":{}},\"stackTrace\":{\"type\":\"string\"}}}",
+                    "contentType" : "application/json"
+                },
+                "requestType" : "POST",
+                "inputs" : {
+                    "reqBodyType" : "form",
+                    "reqHeaders" : [
+                        {
+                            "jsonpathMapping" : "#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authentication-Username",
+                            "defaultValue" : "nfsmUser\t",
+                            "key" : "Authentication-Username"
+                        },
+                        {
+                            "jsonpathMapping" : "#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authorization-Server-Token",
+                            "defaultValue" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTk2ODYyNDIsInVzZXJuYW1lIjoibmZzbVVzZXIifQ.UJivwhO5xBt5RoMugRdeqLgN8t8wbldn2cqYXOdIAgM",
+                            "key" : "Authorization-Server-Token"
+                        },
+                        {
+                            "jsonpathMapping" : "#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authentication-Secret",
+                            "defaultValue" : "123456",
+                            "key" : "Authentication-Secret"
+                        },
+                        {
+                            "jsonpathMapping" : "#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Accept",
+                            "defaultValue" : "application/json",
+                            "key" : "Accept"
+                        }
+                    ],
+                    "reqQuery" : [
+
+                    ],
+                    "reqBodyOther" : "{\"type\":\"object\",\"properties\":{}}",
+                    "reqBodyForm" : [
+                        {
+                            "jsonpathMapping" : "#start_$file",
+                            "type" : "file",
+                            "id" : "46b3b86d-22f1-41ed-a1d1-835c433ccebe",
+                            "key" : "uploadFile"
+                        },
+                        {
+                            "jsonpathMapping" : "#staticParams_$text",
+                            "type" : "text",
+                            "id" : "0967255e-7f5d-49f2-84ac-5e67b43f7bd9",
+                            "key" : "format"
+                        }
+                    ]
+                },
+                "url" : "http://192.168.10.163:3000/mock/1206/mock/28e285d0c58f3650a81c6e072ec07498/yunnan/coordinateCheck/coordinateCheckTxtFile",
+                "protocol" : "restful",
+                "registeredOperatorId" : "c44086ee-f09e-4e9a-a5ae-612171c194b5"
+            },
+            "ports" : {
+                "items" : [
+                    {
+                        "_id" : "2c4a841b-de94-4458-b8c0-8bed3ba8bda5"
+                    },
+                    {
+                        "_id" : "8c4ed63f-bcf3-4b67-a204-5a439852a17d"
+                    },
+                    {
+                        "_id" : "62411d95-0742-4e55-8ea9-2bac767f7f84"
+                    },
+                    {
+                        "_id" : "5b96c143-a6f6-40f9-a2e4-f927e19eef7f"
+                    },
+                    {
+                        "_id" : "15acbeb5-0ba9-4408-a08b-c52f3531a63c"
+                    }
+                ]
+            },
+            "cellType" : "node_outer_http"
+        },
+        "a2574690-e4b7-47f9-9f21-bc18011f593e" : {
+            "_id" : "a2574690-e4b7-47f9-9f21-bc18011f593e",
+            "name" : "数据映射1647486120649",
+            "data" : {
+                "childInputs" : {
+                    "reqBodyType" : "json",
+                    "reqHeaders" : [
+                        {
+                            "jsonpathMapping" : "",
+                            "defaultValue" : "nfsmUser",
+                            "key" : "Authentication-Username"
+                        },
+                        {
+                            "jsonpathMapping" : "",
+                            "defaultValue" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTk2ODYyNDIsInVzZXJuYW1lIjoibmZzbVVzZXIifQ.UJivwhO5xBt5RoMugRdeqLgN8t8wbldn2cqYXOdIAgM",
+                            "key" : "Authorization-Server-Token"
+                        },
+                        {
+                            "jsonpathMapping" : "",
+                            "defaultValue" : "123456",
+                            "key" : " Authentication-Secret"
+                        },
+                        {
+                            "jsonpathMapping" : "",
+                            "defaultValue" : "application/json",
+                            "key" : "Accept"
+                        }
+                    ],
+                    "reqQuery" : [
+
+                    ],
+                    "reqBodyOther" : "{\"type\":\"object\",\"properties\":{\"inputData\":{\"type\":\"object\"},\"WKID\":{\"jsonpathMapping\":\"\",\"type\":\"number\"},\"sumArea\":{\"jsonpathMapping\":\"\",\"type\":\"boolean\"},\"returnIntersection\":{\"jsonpathMapping\":\"\",\"type\":\"boolean\"},\"queryDataList\":{\"jsonpathMapping\":\"\",\"type\":\"array\",\"items\":{}}}}",
+                    "reqBodyForm" : [
+
+                    ]
+                }
+            },
+            "ports" : {
+                "items" : [
+                    {
+                        "_id" : "cce7df23-922f-481a-b7d3-bf0612409e9e"
+                    },
+                    {
+                        "_id" : "0d32170c-a08c-4095-93a4-fb9124d9176b"
+                    }
+                ]
+            },
+            "cellType" : "node_inner_datamap"
+        },
+        "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a" : {
+            "_id" : "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a",
+            "name" : "输出分组1",
+            "ports" : {
+                "items" : [
+                    {
+                        "_id" : "ced48012-960d-42a5-952e-37b610f4efa8"
+                    },
+                    {
+                        "_id" : "0860f58e-4169-4174-9d05-c4ebe801d14b"
+                    },
+                    {
+                        "_id" : "5846de18-8573-4ff4-8ca3-ddddb36ba5fe"
+                    },
+                    {
+                        "_id" : "c577b9dc-98d4-47b4-afa1-0f2cf2bd8bda"
+                    }
+                ]
+            },
+            "cellType" : "node_inner_dataresult"
+        },
+        "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155" : {
+            "_id" : "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155",
+            "name" : "合规性分析",
+            "data" : {
+                "outputs" : {
+                    "outputsJsonSchema" : "{\"type\":\"object\",\"properties\":{\"XI_TDYTQ_2020_CN2K\":{\"type\":\"array\",\"items\":{}},\"XI_JSYDGZQ_2020_CN2K\":{\"type\":\"array\",\"items\":{}},\"XI_TDGHDL_2020_CN2K\":{\"type\":\"array\",\"items\":{}}}}",
+                    "contentType" : "application/json"
+                },
+                "requestType" : "POST",
+                "inputs" : {
+                    "reqBodyType" : "json",
+                    "reqHeaders" : [
+                        {
+                            "jsonpathMapping" : "",
+                            "defaultValue" : "nfsmUser",
+                            "key" : "Authentication-Username"
+                        },
+                        {
+                            "jsonpathMapping" : "",
+                            "defaultValue" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTk2ODYyNDIsInVzZXJuYW1lIjoibmZzbVVzZXIifQ.UJivwhO5xBt5RoMugRdeqLgN8t8wbldn2cqYXOdIAgM",
+                            "key" : "Authorization-Server-Token"
+                        },
+                        {
+                            "jsonpathMapping" : "",
+                            "defaultValue" : "123456",
+                            "key" : " Authentication-Secret"
+                        },
+                        {
+                            "jsonpathMapping" : "",
+                            "defaultValue" : "application/json",
+                            "key" : "Accept"
+                        }
+                    ],
+                    "reqQuery" : [
+
+                    ],
+                    "reqBodyOther" : "{\"type\":\"object\",\"properties\":{\"inputData\":{\"type\":\"object\"},\"WKID\":{\"jsonpathMapping\":\"\",\"type\":\"number\"},\"sumArea\":{\"jsonpathMapping\":\"\",\"type\":\"boolean\"},\"returnIntersection\":{\"jsonpathMapping\":\"\",\"type\":\"boolean\"},\"queryDataList\":{\"jsonpathMapping\":\"\",\"type\":\"array\",\"items\":{}}}}",
+                    "reqBodyForm" : [
+
+                    ]
+                },
+                "url" : "http://192.168.10.163:3000/mock/1206/mock/28e285d0c58f3650a81c6e072ec07498/yunnan/kjfx/ht-discovery/server-rpc/s17-jsydxmqsdlfx-4e9a321b5648f9456626b6ea8fe7d85e",
+                "protocol" : "restful",
+                "registeredOperatorId" : "1379d457-92bd-41bf-9d67-d556cc0345d8"
+            },
+            "ports" : {
+                "items" : [
+                    {
+                        "_id" : "e531ddce-7028-4477-a88f-b4640ce87e0a"
+                    },
+                    {
+                        "_id" : "2929213e-de6e-41b0-96f9-1b26e81ebefe"
+                    },
+                    {
+                        "_id" : "ed06c4f4-1091-412d-b7f4-eb897887d13c"
+                    },
+                    {
+                        "_id" : "e24e8a7d-bb7f-44b8-aee2-39d48bea09f7"
+                    }
+                ]
+            },
+            "cellType" : "node_outer_http"
+        },
+        "e370c291-f885-49e0-b95a-8276aedd6d20" : {
+            "_id" : "e370c291-f885-49e0-b95a-8276aedd6d20",
+            "name" : "普通线",
+            "source" : {
+                "cell" : "7e54be78-83ca-485c-865f-920a36548949",
+                "port" : "353df667-a285-46a7-b3a8-e78ca4435a20"
+            },
+            "target" : {
+                "cell" : "519143d1-ef96-4094-bc05-64d77748fc88",
+                "port" : "bba3eb03-ae6a-4440-9ab3-cd02e6a48156"
+            },
+            "cellType" : "edge_common"
+        },
+        "e32d9395-838e-4301-9173-ed1bf8d04614" : {
+            "_id" : "e32d9395-838e-4301-9173-ed1bf8d04614",
+            "name" : "普通线",
+            "source" : {
+                "cell" : "8501e25d-04b7-4946-9a9f-0f768964453e",
+                "port" : "8c4ed63f-bcf3-4b67-a204-5a439852a17d"
+            },
+            "target" : {
+                "cell" : "7e54be78-83ca-485c-865f-920a36548949",
+                "port" : "0aaa427a-db6d-4a62-9237-1e75fc60bad2"
+            },
+            "cellType" : "edge_common"
+        },
+        "e75d01ee-7ce7-4558-bf5a-f4097764945e" : {
+            "_id" : "e75d01ee-7ce7-4558-bf5a-f4097764945e",
+            "name" : "数据映射1647486120808",
+            "data" : {
+                "childInputs" : {
+                    "reqBodyType" : "form",
+                    "reqHeaders" : [
+                        {
+                            "jsonpathMapping" : "#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authentication-Username",
+                            "defaultValue" : "nfsmUser\t",
+                            "key" : "Authentication-Username"
+                        },
+                        {
+                            "jsonpathMapping" : "#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authorization-Server-Token",
+                            "defaultValue" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTk2ODYyNDIsInVzZXJuYW1lIjoibmZzbVVzZXIifQ.UJivwhO5xBt5RoMugRdeqLgN8t8wbldn2cqYXOdIAgM",
+                            "key" : "Authorization-Server-Token"
+                        },
+                        {
+                            "jsonpathMapping" : "#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Authentication-Secret",
+                            "defaultValue" : "123456",
+                            "key" : "Authentication-Secret"
+                        },
+                        {
+                            "jsonpathMapping" : "#header_c4bd3e5a-a9e0-463d-aef0-4ca44403a006$Accept",
+                            "defaultValue" : "application/json",
+                            "key" : "Accept"
+                        }
+                    ],
+                    "reqQuery" : [
+
+                    ],
+                    "reqBodyOther" : "{\"type\":\"object\",\"properties\":{}}",
+                    "reqBodyForm" : [
+                        {
+                            "jsonpathMapping" : "#start_$file",
+                            "type" : "file",
+                            "id" : "46b3b86d-22f1-41ed-a1d1-835c433ccebe",
+                            "key" : "uploadFile"
+                        },
+                        {
+                            "jsonpathMapping" : "#staticParams_$text",
+                            "type" : "text",
+                            "id" : "0967255e-7f5d-49f2-84ac-5e67b43f7bd9",
+                            "key" : "format"
+                        }
+                    ]
+                }
+            },
+            "ports" : {
+                "items" : [
+                    {
+                        "_id" : "88431fca-e75e-438e-b112-450fd7800c77"
+                    }
+                ]
+            },
+            "cellType" : "node_inner_datamap"
+        },
+        "2c8ff9be-32c1-45f5-8bb4-ae39ec307e9c" : {
+            "_id" : "2c8ff9be-32c1-45f5-8bb4-ae39ec307e9c",
+            "name" : "循环线",
+            "data" : {
+                "conditionData" : [
+                    {
+                        "LselcetId" : "28414277-e374-461b-a249-a86f0bfc6fcd",
+                        "type" : "number",
+                        "LType" : "nodeClick",
+                        "condition" : "<=",
+                        "RselectId" : "58ab713d-7e07-4928-917a-df57afad2d54",
+                        "id" : "3313e84c-fc66-4a86-a716-03ecb99b5d3b",
+                        "logic" : "none",
+                        "Rjsonpath" : "#dynamicParams_$idx",
+                        "Ljsonpath" : "#dynamicParams_$length"
+                    }
+                ],
+                "L" : [
+                    "#dynamicParams_$length"
+                ],
+                "R" : [
+                    "#dynamicParams_$idx"
+                ],
+                "jsonpathElexpression" : "R0<=L0",
+                "cycleInfo" : {
+                    "jsonpathSelect" : "#dynamicParams_$idx",
+                    "rule" : "+",
+                    "type" : "doWhile",
+                    "stepLength" : 1,
+                    "selectId" : "58ab713d-7e07-4928-917a-df57afad2d54"
+                }
+            },
+            "source" : {
+                "cell" : "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a",
+                "port" : "5846de18-8573-4ff4-8ca3-ddddb36ba5fe"
+            },
+            "target" : {
+                "cell" : "519143d1-ef96-4094-bc05-64d77748fc88",
+                "port" : "025c9e65-6801-4236-8e55-9d9c1d80e120"
+            },
+            "cellType" : "edge_loop"
+        },
+        "f777bc83-cbef-4fcb-89ea-eeebc653a4f4" : {
+            "_id" : "f777bc83-cbef-4fcb-89ea-eeebc653a4f4",
+            "name" : "普通线",
+            "source" : {
+                "cell" : "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155",
+                "port" : "2929213e-de6e-41b0-96f9-1b26e81ebefe"
+            },
+            "target" : {
+                "cell" : "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a",
+                "port" : "ced48012-960d-42a5-952e-37b610f4efa8"
+            },
+            "cellType" : "edge_common"
+        }
+    },
+    "roots" : [
+        "c4bd3e5a-a9e0-463d-aef0-4ca44403a006"
+    ],
+    "nodeChildsMap" : {
+        "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a" : [
+            "519143d1-ef96-4094-bc05-64d77748fc88"
+        ],
+        "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155" : [
+            "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a"
+        ],
+        "7e54be78-83ca-485c-865f-920a36548949" : [
+            "519143d1-ef96-4094-bc05-64d77748fc88"
+        ],
+        "e75d01ee-7ce7-4558-bf5a-f4097764945e" : [
+            "8501e25d-04b7-4946-9a9f-0f768964453e"
+        ],
+        "c4bd3e5a-a9e0-463d-aef0-4ca44403a006" : [
+            "e75d01ee-7ce7-4558-bf5a-f4097764945e",
+            "31951f64-e370-4950-ad0b-53c4c139c6c1"
+        ],
+        "519143d1-ef96-4094-bc05-64d77748fc88" : [
+            "a2574690-e4b7-47f9-9f21-bc18011f593e"
+        ],
+        "8501e25d-04b7-4946-9a9f-0f768964453e" : [
+            "7e54be78-83ca-485c-865f-920a36548949"
+        ],
+        "a2574690-e4b7-47f9-9f21-bc18011f593e" : [
+            "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155"
+        ]
+    },
+    "nodeParentsMap" : {
+        "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a" : [
+            "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155"
+        ],
+        "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155" : [
+            "a2574690-e4b7-47f9-9f21-bc18011f593e"
+        ],
+        "7e54be78-83ca-485c-865f-920a36548949" : [
+            "8501e25d-04b7-4946-9a9f-0f768964453e"
+        ],
+        "e75d01ee-7ce7-4558-bf5a-f4097764945e" : [
+            "c4bd3e5a-a9e0-463d-aef0-4ca44403a006"
+        ],
+        "519143d1-ef96-4094-bc05-64d77748fc88" : [
+            "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a",
+            "7e54be78-83ca-485c-865f-920a36548949"
+        ],
+        "31951f64-e370-4950-ad0b-53c4c139c6c1" : [
+            "c4bd3e5a-a9e0-463d-aef0-4ca44403a006"
+        ],
+        "a2574690-e4b7-47f9-9f21-bc18011f593e" : [
+            "519143d1-ef96-4094-bc05-64d77748fc88"
+        ],
+        "8501e25d-04b7-4946-9a9f-0f768964453e" : [
+            "e75d01ee-7ce7-4558-bf5a-f4097764945e"
+        ]
+    },
+    "nodeInputEdgesMap" : {
+        "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a" : [
+            "f777bc83-cbef-4fcb-89ea-eeebc653a4f4"
+        ],
+        "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155" : [
+            "ca6cebc1-56af-4e60-8fe2-9d11de9920b0"
+        ],
+        "7e54be78-83ca-485c-865f-920a36548949" : [
+            "e32d9395-838e-4301-9173-ed1bf8d04614"
+        ],
+        "519143d1-ef96-4094-bc05-64d77748fc88" : [
+            "e370c291-f885-49e0-b95a-8276aedd6d20",
+            "2c8ff9be-32c1-45f5-8bb4-ae39ec307e9c"
+        ],
+        "a2574690-e4b7-47f9-9f21-bc18011f593e" : [
+            "cbab17cf-39f7-4934-932f-9e1bd7fb8a2c"
+        ],
+        "8501e25d-04b7-4946-9a9f-0f768964453e" : [
+            "badcd162-5ac0-474e-9805-6f51f7ef3724"
+        ]
+    },
+    "nodeOutEdgesMap" : {
+        "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a" : [
+            "2c8ff9be-32c1-45f5-8bb4-ae39ec307e9c"
+        ],
+        "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155" : [
+            "f777bc83-cbef-4fcb-89ea-eeebc653a4f4"
+        ],
+        "7e54be78-83ca-485c-865f-920a36548949" : [
+            "e370c291-f885-49e0-b95a-8276aedd6d20"
+        ],
+        "e75d01ee-7ce7-4558-bf5a-f4097764945e" : [
+            "badcd162-5ac0-474e-9805-6f51f7ef3724"
+        ],
+        "519143d1-ef96-4094-bc05-64d77748fc88" : [
+            "cbab17cf-39f7-4934-932f-9e1bd7fb8a2c"
+        ],
+        "8501e25d-04b7-4946-9a9f-0f768964453e" : [
+            "e32d9395-838e-4301-9173-ed1bf8d04614"
+        ],
+        "a2574690-e4b7-47f9-9f21-bc18011f593e" : [
+            "ca6cebc1-56af-4e60-8fe2-9d11de9920b0"
+        ]
+    },
+    "state" : "RUNNING",
+    "totalNodes" : [
+        "badcd162-5ac0-474e-9805-6f51f7ef3724",
+        "7e54be78-83ca-485c-865f-920a36548949",
+        "cbab17cf-39f7-4934-932f-9e1bd7fb8a2c",
+        "c4bd3e5a-a9e0-463d-aef0-4ca44403a006",
+        "ca6cebc1-56af-4e60-8fe2-9d11de9920b0",
+        "519143d1-ef96-4094-bc05-64d77748fc88",
+        "31951f64-e370-4950-ad0b-53c4c139c6c1",
+        "8501e25d-04b7-4946-9a9f-0f768964453e",
+        "a2574690-e4b7-47f9-9f21-bc18011f593e",
+        "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a",
+        "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155",
+        "e370c291-f885-49e0-b95a-8276aedd6d20",
+        "e32d9395-838e-4301-9173-ed1bf8d04614",
+        "e75d01ee-7ce7-4558-bf5a-f4097764945e",
+        "2c8ff9be-32c1-45f5-8bb4-ae39ec307e9c",
+        "f777bc83-cbef-4fcb-89ea-eeebc653a4f4"
+    ],
+    "waitingNodes" : [
+        "badcd162-5ac0-474e-9805-6f51f7ef3724",
+        "7e54be78-83ca-485c-865f-920a36548949",
+        "cbab17cf-39f7-4934-932f-9e1bd7fb8a2c",
+        "c4bd3e5a-a9e0-463d-aef0-4ca44403a006",
+        "ca6cebc1-56af-4e60-8fe2-9d11de9920b0",
+        "519143d1-ef96-4094-bc05-64d77748fc88",
+        "31951f64-e370-4950-ad0b-53c4c139c6c1",
+        "8501e25d-04b7-4946-9a9f-0f768964453e",
+        "a2574690-e4b7-47f9-9f21-bc18011f593e",
+        "a31e2d6b-ff7e-4454-8b2c-00ac90ed823a",
+        "bdc4e174-6ca1-4d0e-9dd2-e8c9f9bc2155",
+        "e370c291-f885-49e0-b95a-8276aedd6d20",
+        "e32d9395-838e-4301-9173-ed1bf8d04614",
+        "e75d01ee-7ce7-4558-bf5a-f4097764945e",
+        "2c8ff9be-32c1-45f5-8bb4-ae39ec307e9c",
+        "f777bc83-cbef-4fcb-89ea-eeebc653a4f4"
+    ],
+    "successNodes" : [
+
+    ],
+    "failNodes" : [
+
+    ],
+    "skipNodes" : [
+
+    ],
+    "suspendNodes" : [
+
+    ],
+    "starDate" : "2022-03-18T03:34:36.674+0000",
+    "groups" : [
+
+    ],
+    "createDate" : "2022-03-18T03:34:36.661+0000",
+    "modifyDate" : "2022-03-18T03:34:36.661+0000"
+}

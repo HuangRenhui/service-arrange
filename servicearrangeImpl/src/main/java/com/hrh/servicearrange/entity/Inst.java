@@ -104,7 +104,7 @@ public class Inst extends BaseEntity implements Serializable {
     private List<KeyValueDto> dynamicParams = new ArrayList<>();
 
     /**
-     * 节点信息集合
+     * 节点信息集合，包含边节点
      */
     @Field("nodeMap")
     private Map<String, Cell> nodeMap = new HashMap<>();
@@ -124,7 +124,7 @@ public class Inst extends BaseEntity implements Serializable {
     @Field("nodeParentsMap")
     private Map<String, Set<String>> nodeParentsMap = new HashMap<String, Set<String>>(); // 节点 与其直接上级
     /**
-     * 节点的入度线
+     * 节点的入度线：线target、线id
      */
     @Field("nodeInputEdgesMap")
     private Map<String, Set<String>> nodeInputEdgesMap = new HashMap<String, Set<String>>();
@@ -188,7 +188,11 @@ public class Inst extends BaseEntity implements Serializable {
      */
     @Field("groups")
     private List<Group> groups;
-
+    /**
+     * 循环线循环次数
+     */
+    @Field("loopRunTimesMap")
+    private Map<String, NodeLoopInfo> loopRunTimesMap = new HashMap<>();
     public String getPlanId() {
         return planId;
     }
@@ -387,5 +391,13 @@ public class Inst extends BaseEntity implements Serializable {
 
     public void setGroups(List<Group> groups) {
         this.groups = groups;
+    }
+
+    public Map<String, NodeLoopInfo> getLoopRunTimesMap() {
+        return loopRunTimesMap;
+    }
+
+    public void setLoopRunTimesMap(Map<String, NodeLoopInfo> loopRunTimesMap) {
+        this.loopRunTimesMap = loopRunTimesMap;
     }
 }

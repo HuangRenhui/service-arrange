@@ -44,7 +44,9 @@ public class Cell {
     private String cellType = CellType.EDGE_COMMON;
 
     public class EdgeEndpoint {
+        //节点id
         private String cell;
+        //桩点
         private String port;
 
         public String getCell() {
