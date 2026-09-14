@@ -34,6 +34,7 @@ public interface TaskInterface {
         //获取循环线之间的节点信息：循环线id、循环线间节点集合、循环次数
         List<NodeLoopInfo> nodeLoopInfos = inst.getLoopRunTimesMap().entrySet().stream().filter(e -> e.getValue().getIdsBetweenLoopEdge().contains(cell.getId())).map(e -> e.getValue()).collect(Collectors.toList());
         if (nodeLoopInfos != null && nodeLoopInfos.size() > 0) {
+            //获取最近的循环线
             NodeLoopInfo near = nodeLoopInfos.stream().sorted((n1, n2) -> n1.getIdsBetweenLoopEdge().size() - n2.getIdsBetweenLoopEdge().size()).findFirst().get();
             task.setLoopTimes(near.getLoopEdgeId() + "|" + near.getTimes());
         } else {

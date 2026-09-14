@@ -104,7 +104,7 @@ public class EndOperateExecutor implements Execute {
                     String[] id4s = StrUtil.subBetweenAll(valueJsonpathMapping, "#header_", "$");
                     Set<String> nodeIds2 = Stream.of(id3s).collect(Collectors.toSet());
                     nodeIds2.addAll(Stream.of(id4s).filter(s -> !StringUtils.isEmpty(s)).collect(Collectors.toSet()));
-                    List<Task> tasks2 = (List<Task>) taskDao.findAllByInstIdAndNodeIdIn(task.getInstId(), nodeIds2);
+                    List<Task> tasks2 = taskDao.findAllByInstIdAndNodeIdIn(task.getInstId(), nodeIds2);
                     if (null != tasks2 && tasks2.size() > 0) {
                         tasks2.stream().forEach(t -> pouts.set(t.getNodeId(), t.getOutputs()));
                     }

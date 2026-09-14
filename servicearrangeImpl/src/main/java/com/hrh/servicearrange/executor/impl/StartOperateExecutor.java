@@ -26,8 +26,6 @@ import java.util.stream.Stream;
 @Service(value = CellType.START)
 public class StartOperateExecutor implements Execute {
 
-    @Autowired
-    private DataMapOperateExecutor dataMapOperateExecutor;
 
     private Task doTaskRun(Task task, Inst inst, TaskDao taskDao, InstLogDao instLogDao) {
         task.setState(Task.STATE_SUCCESS);
