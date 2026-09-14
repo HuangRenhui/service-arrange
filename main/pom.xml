@@ -19,6 +19,7 @@
         <eureka.version>2.1.3.RELEASE</eureka.version>
         <apollo.version>1.8.0</apollo.version>
         <servletapi.version>4.0.1</servletapi.version>
+        <lombok.version>1.18.8</lombok.version>
     </properties>
     <dependencies>
         <!-- SpringBoot自动配置依赖 -->
@@ -47,7 +48,12 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.8</version>
+            <version>${lombok.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.23</version>
         </dependency>
     </dependencies>
 

@@ -1,0 +1,14 @@
+#启用apollo配置开关
+apollo:
+  bootstrap:
+    enabled: false
+#启用eureka配置开关
+eureka:
+  client:
+    enabled: true
+#服务器端口
+server:
+  port: 8083
+spring:
+  profiles:
+    active: jar
