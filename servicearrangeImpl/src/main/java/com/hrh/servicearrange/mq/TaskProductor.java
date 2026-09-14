@@ -63,7 +63,7 @@ public class TaskProductor {
 
     public void nAckTask(String instId, Long deliveryTag, Channel channel, String msg) {
         try {
-//            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
+            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
             this.nAckTask(deliveryTag, channel, msg);
         } catch (Exception e) {
             e.printStackTrace();

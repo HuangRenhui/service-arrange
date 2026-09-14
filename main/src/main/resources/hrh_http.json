@@ -78,7 +78,7 @@
                 "requestType": "GET",
                 "outputs": {
                     "contentType": "application/json",
-                    "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"errno\":{\"type\":\"number\"},\"errmsg\":{\"type\":\"string\"},\"data\":{\"type\":\"number\"}}}"
+                    "outputsJsonSchema": "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"description\":\"唯一标识id\\n固定的节点id如下：\\n按类型分类：*\\n按状态分类：#\\n停用：avail\\n启用：unavail\"},\"text\":{\"type\":\"string\",\"description\":\"显示文本\"},\"sort\":{\"type\":\"number\",\"description\":\"排序值\"},\"children\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"text\":{\"type\":\"string\"},\"sort\":{\"type\":\"number\"},\"children\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}},\"description\":\"子节点\"}}}}"
                 },
                 "inputs": {
                     "reqPath": null,
@@ -127,7 +127,7 @@
             "id": "f424c6c8-8ca5-413d-bda2-1352b1f90dca",
             "data": {
                 "contentType": "application/json",
-                "outputsJsonSchema": "#jsonschema的json串"
+                "outputsJsonSchema": "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"description\":\"唯一标识id\\n固定的节点id如下：\\n按类型分类：*\\n按状态分类：#\\n停用：avail\\n启用：unavail\"},\"text\":{\"type\":\"string\",\"description\":\"显示文本\"},\"sort\":{\"type\":\"number\",\"description\":\"排序值\"},\"children\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"text\":{\"type\":\"string\"},\"sort\":{\"type\":\"number\"},\"children\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}},\"description\":\"子节点\"}}}}"
             }
         }
     ],

@@ -37,40 +37,40 @@ public class TestMQAndZkCommandLineRunner implements CommandLineRunner{
 
     @Override
     public void run(String... args) throws Exception {
-        JSONObject obj = JSONUtil.createObj();
-        obj.set("id", 101);
-        obj.set("name", "张三");
-        obj.set("sex", "man");
-
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("receiveSign", taskRun_queue_name);
-        MessageHeaders mhs = new MessageHeaders(properties);
-        processor.taskProductor().send(MessageBuilder.createMessage(obj, mhs));
-
-        JSONObject obj2 = JSONUtil.createObj();
-        obj2.set("id", 102);
-        obj2.set("name", "莉莉丝");
-        obj2.set("sex", "woman");
-        Map<String, Object> properties2 = new HashMap<>();
-        properties2.put("receiveSign", taskResult_queue_name);
-        MessageHeaders mhs2 = new MessageHeaders(properties2);
-        processor.taskProductor().send(MessageBuilder.createMessage(obj2, mhs2));
-
-        try {
-            byte[] bytes = new byte[1];
-            bytes[0] = 1;
-            String lockNode = curatorFramework.create()
-                    .withMode(CreateMode.EPHEMERAL)
-                    .forPath("/hrh-test", bytes);
-            System.out.println("lockNode:"+lockNode);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        ThreadUtil.safeSleep(1000000);
-        List<String> list = curatorFramework.getChildren().forPath("/hrh-test");
-        System.out.println("=====================");
-        list.forEach(System.out::println);
-        curatorFramework.delete().guaranteed().deletingChildrenIfNeeded().forPath("/hrh-test");
+//        JSONObject obj = JSONUtil.createObj();
+//        obj.set("id", 101);
+//        obj.set("name", "张三");
+//        obj.set("sex", "man");
+//
+//        Map<String, Object> properties = new HashMap<>();
+//        properties.put("receiveSign", taskRun_queue_name);
+//        MessageHeaders mhs = new MessageHeaders(properties);
+//        processor.taskProductor().send(MessageBuilder.createMessage(obj, mhs));
+//
+//        JSONObject obj2 = JSONUtil.createObj();
+//        obj2.set("id", 102);
+//        obj2.set("name", "莉莉丝");
+//        obj2.set("sex", "woman");
+//        Map<String, Object> properties2 = new HashMap<>();
+//        properties2.put("receiveSign", taskResult_queue_name);
+//        MessageHeaders mhs2 = new MessageHeaders(properties2);
+//        processor.taskProductor().send(MessageBuilder.createMessage(obj2, mhs2));
+//
+//        try {
+//            byte[] bytes = new byte[1];
+//            bytes[0] = 1;
+//            String lockNode = curatorFramework.create()
+//                    .withMode(CreateMode.EPHEMERAL)
+//                    .forPath("/hrh-test", bytes);
+//            System.out.println("lockNode:"+lockNode);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        ThreadUtil.safeSleep(1000000);
+//        List<String> list = curatorFramework.getChildren().forPath("/hrh-test");
+//        System.out.println("=====================");
+//        list.forEach(System.out::println);
+//        curatorFramework.delete().guaranteed().deletingChildrenIfNeeded().forPath("/hrh-test");
     }
 
 }

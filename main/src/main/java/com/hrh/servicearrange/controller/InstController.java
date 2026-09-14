@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -65,8 +66,16 @@ public class InstController {
      * @throws Exception
      */
     @PostMapping("/run/or/getResult/{planId}")
-    public Object run(@PathVariable(name = "planId") String planId, StandardMultipartHttpServletRequest request,
+    public Object run(@PathVariable(name = "planId") String planId, HttpServletRequest request,
                       HttpServletResponse response) throws Exception {
+        String contentType = null == request.getContentType() ? "null" : request.getContentType();
+
+        StandardMultipartHttpServletRequest standardMultipartHttpServletRequest = null;
+        if (contentType.contains("multipart/form-data")) {
+            standardMultipartHttpServletRequest = (StandardMultipartHttpServletRequest) request;
+        } else {
+            throw new RuntimeException("请以ContentType=multipart/form-data进行POST提交！当前ContentType=" + contentType);
+        }
         InstRunParamsVo instRunParamsVo = new InstRunParamsVo();
         String dslStr = FileUtil.readUtf8String("hrh_http.json");
         instRunParamsVo.setDsl(dslStr);
@@ -125,15 +134,17 @@ public class InstController {
         instRunParamsVo.setSync(paramObj.containsKey("servea_sync") ? paramObj.getBool("servea_sync") : true);
         instRunParamsVo.setOptType(paramObj.containsKey("servea_optType") ? paramObj.getStr("servea_optType") : "run");
         //处理请求的文件
-        MultiValueMap<String, MultipartFile> multiFiles = request.getMultiFileMap();
-        multiFiles.keySet().stream().forEach(fileKey -> {
-            MultipartFile mFile = multiFiles.getFirst(fileKey);
-            String originalFilename = mFile.getOriginalFilename();
-            int size = Long.valueOf(mFile.getSize()).intValue();
-            //进行文件保存
-            System.out.println(originalFilename + ":" + size);
-            paramObj.set(fileKey, "path");
-        });
+        if(null!=standardMultipartHttpServletRequest) {
+            MultiValueMap<String, MultipartFile> multiFiles = standardMultipartHttpServletRequest.getMultiFileMap();
+            multiFiles.keySet().stream().forEach(fileKey -> {
+                MultipartFile mFile = multiFiles.getFirst(fileKey);
+                String originalFilename = mFile.getOriginalFilename();
+                int size = Long.valueOf(mFile.getSize()).intValue();
+                //进行文件保存
+                System.out.println(originalFilename + ":" + size);
+                paramObj.set(fileKey, "path");
+            });
+        }
         //dsl解析
         Inst inst = dslParser.parser(instRunParamsVo.getDsl());
         inst.setPlanId(planId);
@@ -223,10 +234,18 @@ public class InstController {
     }
 
     //处理请求的body参数值
-    private Map<String, String> convertFormDataBody(StandardMultipartHttpServletRequest request) throws Exception {
+    private Map<String, String> convertFormDataBody(HttpServletRequest request) throws Exception {
         Map<String, String> formDataBody = new HashMap<>();
         System.out.println(request.getContentType());
-        if ("multipart/form-data".equals(request.getContentType())) {
+        //请求form-data空
+        if (request.getContentType() == null) {
+            if (request.getParameterMap() != null) {
+                request.getParameterMap().entrySet().stream().forEach(e -> {
+                    formDataBody.put(e.getKey(), Stream.of(e.getValue()).collect(Collectors.joining(",")));
+                });
+            }
+            //请求form-data有值
+        } else if ("multipart/form-data".equals(request.getContentType())) {
             String formDataAll = new String(readInputStream(request.getInputStream()), "UTF-8");
             if (!StringUtils.isEmpty(formDataAll)) {
                 String[] formDataArr = formDataAll.split("Content-Disposition");
@@ -240,6 +259,7 @@ public class InstController {
                     }
                 }
             }
+            //请求form-data有值和包含文件流
         } else if (request.getContentType().contains("multipart/form-data") && request.getContentType().contains("boundary")) {
             request.getParameterMap().entrySet().stream().forEach(e -> formDataBody.put(e.getKey(), Stream.of(e.getValue()).collect(Collectors.joining(","))));
         }
