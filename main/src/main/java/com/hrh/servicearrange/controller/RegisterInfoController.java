@@ -33,17 +33,22 @@ public class RegisterInfoController {
      * @apiName save
      * @apiVersion 2.0.0
      * @apiDescription 算子注册，存入算子包含的信息。
-     * @apiParam{ "id": "125",
-     * "serviceName": "name",
-     * "category": "1",
-     * "description": "描述",
-     * "serviceUrl": "www.baidu.com",
-     * "requestMethod": "36",
-     * "inParam": "in",
-     * "outParam": "out" ,
-     * "rollBackId": "-1",
-     * "testId": "1"
-     * }
+     * @apiParam
+     *      { "type": "http",
+     *       "serviceName": "百度搜索",
+     * 	  "serviceUrl": "www.baidu.com",
+     * 	  "requestMethod": "post",
+     * 	  "description": "服务编排百度搜索api登记",
+     *       "category": "#0",
+     * 	  "reqQuery":"[{\"required\": \"1\"\"name\": \"id\",\"example\": \"?id=224\",\"desc\": \"\"},{\"required\": \"1\",\"name\": \"description\",\"example\": \"&description=2222\",\"desc\": \"\" }]",
+     *       "reqHeaders":"[{\"required\": \"1\",\"name\": \"Content-Type\",\"value\": \"application/x-www-form-urlencoded\"}]",
+     *       "reqBodyType":"json",
+     * 	  "reqBodyData":"{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"description\":\"修改传目录Id 新增不传\"},\"name\":{\"type\":\"string\",\"description\":\"目录名\"}},\"required\":[\"name\"]}",
+     * 	  "reqBodyIsJsonSchema":true,
+     * 	  "resBodyType":"json",
+     * 	  "resBodyData":"{\"type\":\"string\",\"description\":\"成功返回\"success\"\"}",
+     * 	  "resBodyIsJsonSchema":true
+     *       }
      * @apiSuccess String 返回"success" 表示成功
      * @apiSuccessExample {json} 调用示例
      * POST /servicearrange/registerOperator/save
@@ -96,23 +101,6 @@ public class RegisterInfoController {
      * HTTP/1.1 200 OK
      * <p>
      * 返回结果示例:
-     * {
-     * "id": "12",
-     * "serviceName": "asd",
-     * "category": "2",
-     * "description": "4",
-     * "serviceUrl": "5",
-     * "requestMethod": "6",
-     * "inParam": "7",
-     * "outParam": "8",
-     * "rollBackId": "1",
-     * "testId": "11",
-     * "codeFilename": "12",
-     * "releaseTime": "2021-11-19 14:16:26",
-     * "timeOut": 14,
-     * "requestDataFormat": null,
-     * "catalogueId": "3"
-     * }
      * @apiSampleRequest http://192.168.10.29:8301/servicearrange/registerOperator/findById/2
      */
 
