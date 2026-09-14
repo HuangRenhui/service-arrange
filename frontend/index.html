@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>服务编排控制台</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ 顶部应用栏 ============ -->
+  <header class="appbar">
+    <div class="brand" id="brandHome" title="返回实例列表">
+      <span class="brand-logo">SO</span>
+      <div class="brand-text">
+        <span class="brand-name">服务编排控制台</span>
+        <span class="brand-sub">Service Arrangement Console</span>
+      </div>
+    </div>
+
+    <nav class="nav" id="mainNav">
+      <button class="nav-item active" data-view="instances">
+        <span class="nav-ico">▤</span>实例列表
+      </button>
+      <button class="nav-item" data-view="operator">
+        <span class="nav-ico">⊞</span>算子注册
+      </button>
+      <button class="nav-item" data-view="schema">
+        <span class="nav-ico">⛁</span>Schema 工具
+      </button>
+    </nav>
+
+    <!-- 面包屑（进入实例/运行详情时显示） -->
+    <div class="crumb" id="crumb"></div>
+
+    <div class="appbar-right">
+      <span class="api-status" id="apiStatus" title="后端连通状态">
+        <i class="dot"></i><span id="apiStatusText">未检测</span>
+      </span>
+      <button class="icon-btn" id="apiConfigBtn" title="接口设置">⚙</button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       ① 实例列表
+       ============================================================ -->
+  <main class="view active" id="view-instances">
+    <div class="page">
+      <div class="page-head">
+        <div class="ph-left">
+          <h2>实例列表</h2>
+          <p class="page-desc">一个实例即一条编排流程。创建实例后进入编排，编排完成后运行并查看运行记录。</p>
+        </div>
+        <button class="btn btn-primary" id="btnNewInstance">＋ 新建实例</button>
+      </div>
+
+      <div class="list-toolbar">
+        <input class="search-input" id="instSearch" placeholder="搜索实例名称 / planId…">
+        <select class="filter-select" id="instStateFilter">
+          <option value="">全部状态</option>
+          <option value="RUNNING">运行中</option>
+          <option value="SUCCESS">成功</option>
+          <option value="FAIL">失败</option>
+          <option value="WAITE">未运行</option>
+        </select>
+        <span class="lt-count" id="instCount">共 0 个实例</span>
+      </div>
+
+      <div class="inst-grid" id="instGrid"></div>
+      <div class="empty-block" id="instEmpty" style="display:none">
+        <div class="eb-ico">▤</div>
+        <div class="eb-title">还没有实例</div>
+        <div class="eb-desc">点击右上角「新建实例」开始编排你的第一条流程</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       ② 编排页（设计器）
+       ============================================================ -->
+  <main class="view" id="view-designer">
+
+    <aside class="palette">
+      <div class="palette-search">
+        <input id="paletteSearch" placeholder="搜索节点 / 算子…" autocomplete="off">
+      </div>
+      <div class="palette-body" id="nodeCatalog"></div>
+      <div class="palette-foot">
+        <button class="link-btn" id="btnCollapseAll">全部折叠</button>
+        <button class="link-btn" id="btnExpandAll">全部展开</button>
+      </div>
+    </aside>
+
+    <section class="canvas-wrap">
+      <div class="toolbar">
+        <div class="tb-group">
+          <button class="tb-btn" id="btnBackInstances" title="返回实例列表">← 返回</button>
+          <input class="plan-input" id="planIdInput" placeholder="planId" readonly title="实例的 planId">
+        </div>
+        <div class="tb-sep"></div>
+        <div class="tb-group">
+          <button class="tb-btn" id="btnImport" title="粘贴 JSON 导入编排">导入</button>
+          <button class="tb-btn" id="btnExport" title="导出为后端可用 DSL">导出</button>
+        </div>
+        <div class="tb-sep"></div>
+        <div class="tb-group">
+          <button class="tb-btn" id="btnValidate" title="校验编排">校验</button>
+          <button class="tb-btn" id="btnSaveDesign" title="保存编排到该实例">保存</button>
+          <button class="tb-btn tb-btn-primary" id="btnRun" title="保存并运行">保存并运行</button>
+        </div>
+        <span class="tb-spacer"></span>
+        <div class="tb-group tb-zoom">
+          <button class="tb-icon" id="btnZoomOut" title="缩小">−</button>
+          <span class="zoom-label" id="zoomLabel">100%</span>
+          <button class="tb-icon" id="btnZoomIn" title="放大">＋</button>
+          <button class="tb-icon" id="btnFit" title="适应画布">⤢</button>
+          <button class="tb-icon tb-danger" id="btnClear" title="清空画布">✕</button>
+        </div>
+      </div>
+
+      <div class="canvas" id="canvas">
+        <svg class="edges-layer" id="edgesLayer">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3"
+                    orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"/>
+            </marker>
+            <marker id="arrow-decision" markerWidth="10" markerHeight="10" refX="9" refY="3"
+                    orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#f59e0b"/>
+            </marker>
+            <marker id="arrow-loop" markerWidth="10" markerHeight="10" refX="9" refY="3"
+                    orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#14b8a6"/>
+            </marker>
+            <marker id="arrow-compensate" markerWidth="10" markerHeight="10" refX="9" refY="3"
+                    orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#ef4444"/>
+            </marker>
+          </defs>
+          <g id="edgesGroup"></g>
+          <g id="tempEdgeGroup"></g>
+        </svg>
+        <div class="nodes-layer" id="nodesLayer"></div>
+
+        <div class="canvas-empty" id="canvasEmpty">
+          <div class="ce-ico">◈</div>
+          <div class="ce-title">画布是空的</div>
+          <div class="ce-desc">从左侧拖拽节点或已注册算子到此处开始编排</div>
+        </div>
+
+        <div class="canvas-legend">
+          <span><i class="lg lg-common"></i>普通线</span>
+          <span><i class="lg lg-decision"></i>决策线</span>
+          <span><i class="lg lg-loop"></i>循环线</span>
+          <span><i class="lg lg-compensate"></i>补偿线</span>
+        </div>
+      </div>
+
+      <div class="statusbar">
+        <span id="statusNodes">节点 0</span>
+        <span class="sb-sep"></span>
+        <span id="statusEdges">连线 0</span>
+        <span class="sb-sep"></span>
+        <span id="statusSelection">未选中</span>
+        <span class="sb-spacer"></span>
+        <span class="sb-hint">拖拽入库 · 拖动圆点连线 · Delete 删除 · Ctrl+滚轮缩放</span>
+      </div>
+    </section>
+
+    <aside class="inspector">
+      <div class="inspector-head">
+        <span class="ih-icon" id="propIcon">◈</span>
+        <div class="ih-text">
+          <div class="ih-title" id="propTitle">属性面板</div>
+          <div class="ih-sub" id="propSub">未选中任何元素</div>
+        </div>
+      </div>
+      <div class="inspector-body" id="propBody">
+        <div class="insp-empty">
+          <div class="ie-ico">⇦</div>
+          <p>选中画布中的<strong>节点</strong>或<strong>连线</strong><br>即可在此编辑其属性</p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ============================================================
+       ③ 运行记录
+       ============================================================ -->
+  <main class="view" id="view-runs">
+    <div class="page">
+      <div class="page-head">
+        <div class="ph-left">
+          <h2>运行记录</h2>
+          <p class="page-desc" id="runsDesc">—</p>
+        </div>
+        <div class="ph-actions">
+          <button class="btn" id="btnRunsBack">← 返回实例列表</button>
+          <button class="btn btn-primary" id="btnRunsRun">运行一次</button>
+        </div>
+      </div>
+
+      <div class="card card-tight">
+        <div class="runs-toolbar">
+          <select class="filter-select" id="runStateFilter">
+            <option value="">全部状态</option>
+            <option value="RUNNING">运行中</option>
+            <option value="SUCCESS">成功</option>
+            <option value="FAIL">失败</option>
+          </select>
+          <span class="lt-count" id="runsCount">共 0 条记录</span>
+        </div>
+        <table class="tbl tbl-runs">
+          <thead>
+            <tr>
+              <th style="width:70px">序号</th>
+              <th style="width:150px">开始时间</th>
+              <th style="width:100px">耗时</th>
+              <th style="width:110px">状态</th>
+              <th style="width:150px">入参摘要</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="runsTbody"></tbody>
+        </table>
+        <div class="empty-block" id="runsEmpty" style="display:none">
+          <div class="eb-ico">▷</div>
+          <div class="eb-title">还没有运行记录</div>
+          <div class="eb-desc">点击右上角「运行一次」执行该实例</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       ④ 运行详情（编排图 + 实例日志 + 算子日志）
+       ============================================================ -->
+  <main class="view" id="view-run-detail">
+
+    <div class="rd-main">
+      <div class="rd-head">
+        <button class="tb-btn" id="btnRdBack">← 返回运行记录</button>
+        <div class="rd-title">
+          <span class="rd-seq" id="rdSeq">#1</span>
+          <span class="rd-time" id="rdTime">—</span>
+        </div>
+        <span class="state-badge" id="rdState">—</span>
+        <span class="tb-spacer"></span>
+        <div class="rd-stats" id="rdStats"></div>
+      </div>
+
+      <div class="rd-tabs">
+        <button class="rd-tab active" data-rdtab="graph">
+          <span>◈</span>编排图
+        </button>
+        <button class="rd-tab" data-rdtab="logs">
+          <span>▤</span>实例日志<span class="tab-badge" id="rdLogCount">0</span>
+        </button>
+      </div>
+
+      <!-- Tab1：编排图（只读，节点按结果染色） -->
+      <div class="rd-pane active" id="rdPaneGraph">
+        <div class="rd-graph" id="rdGraph">
+          <svg class="edges-layer" id="rdEdgesLayer">
+            <defs>
+              <marker id="rd-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3"
+                      orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"/>
+              </marker>
+            </defs>
+            <g id="rdEdgesGroup"></g>
+          </svg>
+          <div class="nodes-layer" id="rdNodesLayer"></div>
+        </div>
+        <div class="rd-graph-legend">
+          <span><i class="dot-s dot-success"></i>成功</span>
+          <span><i class="dot-s dot-fail"></i>失败</span>
+          <span><i class="dot-s dot-skip"></i>跳过</span>
+          <span><i class="dot-s dot-running"></i>运行中</span>
+          <span><i class="dot-s dot-wait"></i>未执行</span>
+          <span class="rd-gl-tip">点击算子查看其运行日志 →</span>
+        </div>
+      </div>
+
+      <!-- Tab2：实例日志 -->
+      <div class="rd-pane" id="rdPaneLogs">
+        <div class="log-toolbar">
+          <select class="filter-select" id="logLevelFilter">
+            <option value="">全部级别</option>
+            <option value="INFO">INFO</option>
+            <option value="WARN">WARN</option>
+            <option value="ERRO">ERRO</option>
+          </select>
+          <button class="btn btn-sm" id="btnLogAutoScroll">自动滚动：开</button>
+          <span class="lt-count" id="logCount">0 条</span>
+        </div>
+        <div class="log-list" id="logList"></div>
+      </div>
+    </div>
+
+    <!-- 右侧：算子运行日志 -->
+    <aside class="rd-node-panel" id="rdNodePanel">
+      <div class="rnp-head">
+        <span class="ih-icon" id="rnpIcon">◈</span>
+        <div class="ih-text">
+          <div class="ih-title" id="rnpTitle">算子运行日志</div>
+          <div class="ih-sub" id="rnpSub">点击左侧编排图中的算子查看</div>
+        </div>
+      </div>
+      <div class="rnp-stats" id="rnpStats"></div>
+      <div class="rnp-body" id="rnpBody">
+        <div class="insp-empty">
+          <div class="ie-ico">◈</div>
+          <p>点击编排图中的<strong>算子节点</strong><br>查看它的运行日志</p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ============================================================
+       ⑤ 算子注册
+       ============================================================ -->
+  <main class="view" id="view-operator">
+    <div class="page">
+      <div class="page-head">
+        <div class="ph-left">
+          <h2>算子注册</h2>
+          <p class="page-desc">注册算子后，可在任意实例的编排页左侧节点库中直接使用。</p>
+        </div>
+        <button class="btn btn-primary" id="btnNewOperator">＋ 新建算子</button>
+      </div>
+
+      <div class="list-toolbar">
+        <input class="search-input" id="opSearch" placeholder="搜索算子名称 / 描述…">
+        <div class="seg" id="opTypeSeg">
+          <button class="seg-item active" data-optype="">全部</button>
+          <button class="seg-item" data-optype="http">HTTP</button>
+          <button class="seg-item" data-optype="sql">SQL</button>
+          <button class="seg-item" data-optype="shell">Shell</button>
+        </div>
+        <span class="lt-count" id="opCount">共 0 个算子</span>
+      </div>
+
+      <div class="op-grid" id="opGrid"></div>
+      <div class="empty-block" id="opEmpty" style="display:none">
+        <div class="eb-ico">⊞</div>
+        <div class="eb-title">还没有注册算子</div>
+        <div class="eb-desc">点击右上角「新建算子」，选择算子包类型后填写配置</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       Schema 工具
+       ============================================================ -->
+  <main class="view" id="view-schema">
+    <div class="page">
+      <div class="page-head">
+        <div class="ph-left">
+          <h2>Schema 工具</h2>
+          <p class="page-desc">可视化设计 JSON Schema，用于开始/结束节点的入参、出参声明。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-ico">⛁</span>字段设计</div>
+        <table class="tbl" id="schemaTbl">
+          <thead>
+            <tr>
+              <th style="width:26%">字段名</th>
+              <th style="width:18%">类型</th>
+              <th style="width:16%">必填</th>
+              <th>描述</th>
+              <th style="width:60px"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="form-actions"><button class="btn btn-sm" id="btnAddSchemaRow">＋ 添加字段</button></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-ico">{}</span>生成的 JSON Schema</div>
+        <pre class="json-view" id="schemaOut">—</pre>
+        <div class="form-actions"><button class="btn" id="btnCopySchema">复制</button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ 抽屉：接口设置 ============ -->
+  <div class="drawer-mask" id="apiDrawerMask"></div>
+  <aside class="drawer" id="apiDrawer">
+    <div class="drawer-head">
+      <span>⚙ 接口设置</span>
+      <button class="icon-btn" id="apiDrawerClose">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="form-row form-row-col">
+        <label>后端基础地址</label>
+        <input id="apiBase" placeholder="http://localhost:8082/servicearrange">
+        <p class="hint">
+          需包含上下文路径 <code>/servicearrange</code>，端口默认 <code>8082</code>。<br>
+          留空则使用当前页面同源地址。
+        </p>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="btnApiSave">保存</button>
+        <button class="btn" id="btnApiTest">连通性检测</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ 算子编辑抽屉 ============ -->
+  <div class="drawer-mask" id="opDrawerMask"></div>
+  <aside class="drawer drawer-wide" id="opDrawer">
+    <div class="drawer-head">
+      <span id="opDrawerTitle">新建算子</span>
+      <button class="icon-btn" id="opDrawerClose">✕</button>
+    </div>
+    <div class="drawer-body">
+      <!-- 基础信息 -->
+      <div class="sub-title">基础信息</div>
+      <div class="form-row"><label>算子名称 <span class="req">*</span></label><input id="opName2" placeholder="如：查询用户信息"></div>
+      <div class="form-row"><label>算子包类型 <span class="req">*</span></label>
+        <select id="opType2">
+          <option value="http">http —— REST 接口</option>
+          <option value="sql">sql —— 数据库脚本</option>
+          <option value="shell">shell —— 本机脚本</option>
+        </select>
+      </div>
+      <div class="form-row"><label>描述</label><input id="opDesc2" placeholder="用途说明"></div>
+
+      <!-- HTTP 表单 -->
+      <div id="opFormHttp" class="op-form">
+        <div class="sub-title">HTTP 配置</div>
+        <div class="grid-2">
+          <div class="form-row"><label>请求方法</label>
+            <select id="opMethod2">
+              <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option>
+            </select>
+          </div>
+          <div class="form-row"><label>内容类型</label>
+            <select id="opContentType2">
+              <option>application/json</option>
+              <option>application/x-www-form-urlencoded</option>
+              <option>application/xml</option>
+              <option>multipart/form-data</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row"><label>请求地址 <span class="req">*</span></label><input id="opUrl2" placeholder="http://api.example.com/user/{id}"></div>
+        <div class="form-row form-row-col">
+          <label>Headers</label>
+          <div class="kv-list" id="opHeadersList"></div>
+          <button class="btn btn-sm" id="btnAddOpHeader">＋ 添加 Header</button>
+        </div>
+        <div class="form-row form-row-col">
+          <label>Query 参数</label>
+          <div class="kv-list" id="opQueryList"></div>
+          <button class="btn btn-sm" id="btnAddOpQuery">＋ 添加参数</button>
+        </div>
+        <div class="form-row form-row-col">
+          <label>Body</label>
+          <textarea id="opBody2" rows="5" placeholder='{"name":"${name}"}'></textarea>
+        </div>
+      </div>
+
+      <!-- SQL 表单 -->
+      <div id="opFormSql" class="op-form" style="display:none">
+        <div class="sub-title">SQL 配置</div>
+        <div class="form-row"><label>选择数据库 <span class="req">*</span></label>
+          <select id="opDatabase">
+            <option value="">请选择数据库</option>
+            <option value="mysql-main">mysql-main（主库）</option>
+            <option value="mysql-report">mysql-report（报表库）</option>
+            <option value="pg-order">pg-order（订单库）</option>
+            <option value="oracle-legacy">oracle-legacy（遗留系统）</option>
+          </select>
+        </div>
+        <div class="form-row form-row-col">
+          <label>SQL 语句 <span class="req">*</span></label>
+          <textarea id="opSql" rows="12" class="code-editor" spellcheck="false"
+            placeholder="SELECT id, name, age&#10;FROM t_user&#10;WHERE id = #{userId}"></textarea>
+          <p class="hint">支持 <code>#{参数名}</code> 占位，运行期由编排传入。</p>
+        </div>
+      </div>
+
+      <!-- Shell 表单 -->
+      <div id="opFormShell" class="op-form" style="display:none">
+        <div class="sub-title">Shell 配置</div>
+        <div class="grid-2">
+          <div class="form-row"><label>执行环境 <span class="req">*</span></label>
+            <select id="opEnv">
+              <option value="">请选择执行环境</option>
+              <option value="linux-prod-01">linux-prod-01</option>
+              <option value="linux-prod-02">linux-prod-02</option>
+              <option value="linux-test-01">linux-test-01</option>
+              <option value="local">本机</option>
+            </select>
+          </div>
+          <div class="form-row"><label>超时(ms)</label><input id="opTimeout2" type="number" value="30000"></div>
+        </div>
+        <div class="form-row form-row-col">
+          <label>脚本内容 <span class="req">*</span></label>
+          <textarea id="opScript" rows="12" class="code-editor" spellcheck="false"
+            placeholder="#!/bin/bash&#10;echo &quot;hello ${name}&quot;"></textarea>
+          <p class="hint">支持 <code>${参数名}</code> 占位，运行期由编排传入。</p>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" id="btnOpSave2">保存算子</button>
+        <button class="btn" id="btnOpCancel2">取消</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ 模态 ============ -->
+  <div class="modal-mask" id="modalMask">
+    <div class="modal">
+      <div class="modal-head">
+        <span id="modalTitle">DSL</span>
+        <button class="icon-btn" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <textarea id="modalText" spellcheck="false"></textarea>
+        <div class="modal-msg" id="modalMsg"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="modalCancel">关闭</button>
+        <button class="btn btn-primary" id="modalOk">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+</div>
+
+<script src="js/schema.js"></script>
+<script src="js/nodes.js"></script>
+<script src="js/validator.js"></script>
+<script src="js/store.js"></script>
+<script src="js/api.js"></script>
+<script src="js/designer.js"></script>
+<script src="js/views.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
