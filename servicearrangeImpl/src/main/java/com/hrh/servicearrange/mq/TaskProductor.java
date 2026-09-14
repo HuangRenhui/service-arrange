@@ -15,6 +15,8 @@ import java.io.IOException;
 
 /**
  * 任务生产
+ * ack：消费成功；
+ * nack：消费失败
  */
 @Component
 public class TaskProductor {
@@ -61,7 +63,7 @@ public class TaskProductor {
 
     public void nAckTask(String instId, Long deliveryTag, Channel channel, String msg) {
         try {
-            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
+//            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
             this.nAckTask(deliveryTag, channel, msg);
         } catch (Exception e) {
             e.printStackTrace();
