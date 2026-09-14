@@ -1,14 +1,20 @@
 package com.hrh.servicearrange.controller;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.hrh.servicearrange.convert.StartTask;
 import com.hrh.servicearrange.dao.InstDao;
+import com.hrh.servicearrange.dao.TaskDao;
 import com.hrh.servicearrange.entity.Inst;
+import com.hrh.servicearrange.entity.Task;
+import com.hrh.servicearrange.mq.TaskProductor;
 import com.hrh.servicearrange.parser.DslParser;
 import com.hrh.servicearrange.utils.JsonSchemaUtil;
 import com.hrh.servicearrange.vo.InstRunParamsVo;
+import com.hrh.servicearrange.vo.InstRunResponseVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -20,10 +26,14 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author huangrenhui
@@ -38,6 +48,12 @@ public class InstController {
     private DslParser dslParser;
     @Autowired
     private InstDao instDao;
+    @Autowired
+    private StartTask startTask;
+    @Autowired
+    private TaskDao taskDao;
+    @Autowired
+    private TaskProductor taskProductor;
 
     /**
      * @param planId   模型id
@@ -66,10 +82,11 @@ public class InstController {
         //处理开始节点的jsonshema信息，转换字段类型：字段和对应类型
         JSONObject paramObj = JSONUtil.createObj(JsonSchemaUtil.jsonConfig);
         Map<String, String> dslStartParamsTypeMap = DslParser.getDslStartParamsTypeMap(dslStr);
-        Enumeration<String> parameterNames = request.getParameterNames();
-        while (parameterNames.hasMoreElements()) {
-            String name = parameterNames.nextElement();
-            String value = request.getParameter(name);
+        //处理请求的body参数，将body的值和start对应的jsonschema关系映射起来
+        Map<String, String> formDataBody = convertFormDataBody(request);
+        formDataBody.entrySet().stream().forEach(e -> {
+            String name = e.getKey();
+            String value = e.getValue();
             if (dslStartParamsTypeMap.containsKey(name)) {
                 switch (dslStartParamsTypeMap.get(name)) {
                     case "text":
@@ -101,7 +118,7 @@ public class InstController {
             } else {
                 paramObj.set(name, value);
             }
-        }
+        });
         instRunParamsVo.setInstName(paramObj.getStr("servea_instName"));
         instRunParamsVo.setSync(paramObj.containsKey("servea_sync") ? paramObj.getBool("servea_sync") : true);
         instRunParamsVo.setOptType(paramObj.containsKey("servea_optType") ? paramObj.getStr("servea_optType") : "run");
@@ -126,6 +143,62 @@ public class InstController {
         inst.setModifyDate(date);
         inst.setHeaderParams(headerParams);
         instDao.save(inst);
+        //返回实例运行结果
+        InstRunResponseVo responseVo = new InstRunResponseVo();
+        responseVo.setId(inst.getId());
+        responseVo.setState(inst.getState());
+        //开始运行实例
+        if (instRunParamsVo.getOptType().equalsIgnoreCase("run")) {
+            inst.setStarDate(new Date());
+            inst.setState(Inst.STATE_RUNNING);
+            instDao.save(inst);
+            //从虚拟开始节点运行
+            String startId = inst.getRoots().stream().findFirst().get();
+            Task task = startTask.convert(inst.getNodeMap().get(startId), inst);
+            taskDao.save(task);
+            //mq发送开始运行
+            taskProductor.sendTaskResult(task);
+        }
         return null;
+    }
+
+    //处理请求的body参数值
+    private Map<String, String> convertFormDataBody(StandardMultipartHttpServletRequest request) throws Exception {
+        Map<String, String> formDataBody = new HashMap<>();
+        System.out.println(request.getContentType());
+        if ("multipart/form-data".equals(request.getContentType())) {
+            String formDataAll = new String(readInputStream(request.getInputStream()), "UTF-8");
+            if (!StringUtils.isEmpty(formDataAll)) {
+                String[] formDataArr = formDataAll.split("Content-Disposition");
+                for (int i = 0; i < formDataArr.length; i++) {
+                    String formDataTmp = formDataArr[i];
+                    if (formDataTmp.contains("form-data;") && !formDataTmp.contains("filename=\"") && !formDataTmp.contains("Content-Type:")) {
+                        String[] formDataTmpArr = formDataTmp.split("\r");
+                        String name = StrUtil.subBetween(formDataTmpArr[0], "name=\"", "\"");
+                        String value = StrUtil.trim(formDataTmpArr[formDataTmpArr.length - 3], 0);
+                        formDataBody.put(name, value);
+                    }
+                }
+            }
+        } else if (request.getContentType().contains("multipart/form-data") && request.getContentType().contains("boundary")) {
+            request.getParameterMap().entrySet().stream().forEach(e -> formDataBody.put(e.getKey(), Stream.of(e.getValue()).collect(Collectors.joining(","))));
+        }
+        return formDataBody;
+    }
+
+    private static byte[] readInputStream(InputStream inputStream) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, len);
+            }
+            outputStream.close();
+            inputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return outputStream.toByteArray();
     }
 }

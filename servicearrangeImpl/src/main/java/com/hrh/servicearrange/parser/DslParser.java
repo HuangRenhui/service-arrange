@@ -213,6 +213,7 @@ public class DslParser {
         //处理循环线之间的节点，包含边
         dsl.getCells().stream().filter(c -> CellType.EDGE_LOOP.equals(c.getCellType())).forEach(edge -> {
             Set<String> ids = getCellIdsBetweenLoopEdge(inst, edge);
+            //记录循环线之间节点循环执行的次数
             inst.getLoopRunTimesMap().put(edge.getId(), new NodeLoopInfo(edge.getId(), ids, 0));
         });
         return inst;
@@ -221,16 +222,57 @@ public class DslParser {
     private Set<String> getCellIdsBetweenLoopEdge(Inst inst, Cell loopCell) {
         //循环线的入度节点
         String source = loopCell.getSource().getCell();
+        //获取入度的所有父节点
+        Set<String> myParents = new HashSet<>();
+        getMyParents(myParents, inst.getNodeParentsMap().get(source), inst);
         //循环线的出度节点
         String target = loopCell.getTarget().getCell();
         //父子节点关系
         Map<String, Set<String>> nodeChildsMap = inst.getNodeChildsMap();
-        Set<String> myParents = new HashSet<>();
-        //获取入度的所有父节点
-        getMyParents(myParents, source, inst.getNodeParentsMap().get(source), inst);
-        return null;
+        //获取出度的所有子节点，子节点<=父节点（父节点多了一个出度父节点）
+        Set<String> idsbetween = new HashSet<>();
+        idsbetween.add(source);
+        idsbetween.add(target);
+        getChildNotInSet(idsbetween, target, nodeChildsMap, myParents);
+        //添加边：先从所有节点中获取边节点，然后出入度节点都包含在循环线间节点的线添加进来；
+        inst.getNodeMap().entrySet().stream().filter(e -> CELL_EDGE_TYPES.contains(e.getValue().getCellType()))
+                .filter(e -> idsbetween.contains(e.getValue().getSource().getCell()) && idsbetween.contains(e.getValue().getTarget().getCell()))
+                .forEach(e -> idsbetween.add(e.getKey()));
+        return idsbetween;
     }
 
-    private void getMyParents(Set<String> myParents, String source, Set<String> strings, Inst inst) {
+    private static int Chilednum = -1;
+
+    private void getChildNotInSet(Set<String> idsbetween, String target, Map<String, Set<String>> nodeChildsMap, Set<String> myParents) {
+        //获取入度的所有子节点
+        List<String> childs = nodeChildsMap.get(target).stream().filter(i -> myParents.contains(i)).collect(Collectors.toList());
+        if (childs != null && childs.size() > 0) {
+            idsbetween.addAll(childs);
+            Chilednum++;
+            if (idsbetween.size() <= Chilednum) {
+                return;
+            }
+            childs.stream().forEach(i -> getChildNotInSet(idsbetween, i, nodeChildsMap, myParents));
+        }
+        Chilednum = -1;
+    }
+
+    //递归标志
+    private static int Parentnum = -1;
+
+    private void getMyParents(Set<String> myParents, Set<String> pids, Inst inst) {
+        if (!StringUtils.isEmpty(pids)) {
+            pids.stream().forEach(id -> {
+                Parentnum++;
+                myParents.add(id);
+                //当添加的id个数不在变化时退出递归
+                if (myParents.size() <= Parentnum) {
+                    return;
+                }
+                Set<String> pids2 = inst.getNodeParentsMap().get(id);
+                getMyParents(myParents, pids2, inst);
+            });
+        }
+        Parentnum = -1;
     }
 }

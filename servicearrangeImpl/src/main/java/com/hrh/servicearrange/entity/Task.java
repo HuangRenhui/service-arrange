@@ -21,6 +21,7 @@ public class Task extends BaseEntity implements Serializable {
      * 任务状态
      */
     public static final String STATE_WAITE = "WAITE";
+    public static final String STATE_RUNNING = "RUNNING";
     public static final String STATE_SUCCESS = "SUCCESS";
     public static final String STATE_SKIP = "SKIP";
     public static final String STATE_FAIL = "FAIL";
@@ -115,6 +116,13 @@ public class Task extends BaseEntity implements Serializable {
      */
     @Field("executorEndDate")
     private Date executorEndDate;
+    /**
+     * 循环次数，每次循环将建立一个新的任务，也就是说一个节点，将有可能创建多个任务
+     * 格式 循环线id+"|"+次数，无循环时 null
+     */
+    @Field("loopTimes")
+    private String loopTimes = "0";
+
 
     public static class RetryRules {
         /**
@@ -371,5 +379,13 @@ public class Task extends BaseEntity implements Serializable {
 
     public void setExecutorEndDate(Date executorEndDate) {
         this.executorEndDate = executorEndDate;
+    }
+
+    public String getLoopTimes() {
+        return loopTimes;
+    }
+
+    public void setLoopTimes(String loopTimes) {
+        this.loopTimes = loopTimes;
     }
 }
