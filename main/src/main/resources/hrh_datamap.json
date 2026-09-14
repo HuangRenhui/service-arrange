@@ -5,7 +5,7 @@
             "cellType": "node_start",
             "id": "2d557d74-09ee-447b-bd4a-1e7b92da7202",
             "data": {
-                "inputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}",
+                "inputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}"
             }
         },
         {

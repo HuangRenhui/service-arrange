@@ -1,0 +1,1467 @@
+{
+  "groups": [],
+  "cells": [{
+    "source": {
+      "cell": "1c364543-5daf-4944-95a8-44344da95052",
+      "port": "0c40df5f-7ca8-4c14-b668-a1818309bd58"
+    },
+    "target": {
+      "cell": "d6342a1a-3b75-47b2-9384-c2c3da900b75",
+      "port": "c6d3d4a9-e524-4057-9b63-15e750ed4e67"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "8b34c335-3513-4623-b3e6-547351b1a529"
+  }, {
+    "source": {
+      "cell": "c14ded14-677b-4b40-b83c-660af439d2df",
+      "port": "95abc7c3-caf7-42e7-a6cc-6f44b0d15f38"
+    },
+    "target": {
+      "cell": "ea26e26c-fd89-4ef9-a852-7c758ae8ee65",
+      "port": "62b4a03c-8753-4bc8-a159-fd819b18f290"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "58228c41-fac4-47af-8187-7c5ba6fa3e8a"
+  }, {
+    "source": {
+      "cell": "598d12dc-2b1c-41f3-aee2-0a42b706e261",
+      "port": "6735e34a-01aa-42b0-9e76-8e9d117f10de"
+    },
+    "target": {
+      "cell": "d47bae47-53af-4057-89ef-89204bd21c72",
+      "port": "5c76545a-c5a3-416e-a2d0-1590e3d89bc5"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "9bc2c297-4d7f-4cde-98c2-9149be26ab99"
+  }, {
+    "source": {
+      "cell": "d2b8310e-4769-4e89-a071-4715b19b8370",
+      "port": "66180bfd-c9c3-4dca-81b8-41c6907b996b"
+    },
+    "target": {
+      "cell": "04a31c24-d2e7-46be-8080-d434043f9cbb",
+      "port": "1e10fbcc-e061-4900-bf21-c3e4f55133c4"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "59af6715-a95e-4991-b45f-acfdf361a027"
+  }, {
+    "source": {
+      "cell": "0d88800b-5adb-444b-b915-af8e11ef754e",
+      "port": "52752ecb-8026-443d-bdd9-c148e020e910"
+    },
+    "target": {
+      "cell": "f92fa670-e03d-4393-b653-5f970b1a2964",
+      "port": "fd5020ba-f538-4729-a0ac-29fb68de1e89"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "ea0b6a8e-7130-4be2-a575-7892fa3aabd1"
+  }, {
+    "source": {
+      "cell": "9d49f2fd-81b8-4c85-ae75-98e6ea37bb57",
+      "port": "c917981c-dc2c-44b9-81ea-032b2d2b6d8a"
+    },
+    "target": {
+      "cell": "d9f842d7-b080-4f13-a189-445a35223eee",
+      "port": "62e03b9f-5d61-4587-958d-a4008aa56b25"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "348c3881-d07d-4371-9a82-145adcb3d835"
+  }, {
+    "source": {
+      "cell": "ab5178c6-e44c-4112-8fdd-58eef07e815f",
+      "port": "ed7b0509-044f-41f4-a466-11971ec93a7c"
+    },
+    "target": {
+      "cell": "358f9ec3-7b15-44af-b639-fbc7520d979c",
+      "port": "ad6953c0-99c1-4b00-839a-4b30747b099f"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "4460213b-6dce-4720-b9c8-279f01c3307e"
+  }, {
+    "source": {
+      "cell": "d6342a1a-3b75-47b2-9384-c2c3da900b75",
+      "port": "a4d0f9f9-df1c-40cf-b22f-3d1b0dffa39f"
+    },
+    "target": {
+      "cell": "f9b6d1ae-65e1-4af9-a486-d9f2b203e627",
+      "port": "aa7cbdc5-77bd-4395-90d8-bdfd6f6f7c78"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "4329cc84-b538-40af-a8ea-ce46ce29b628"
+  }, {
+    "source": {
+      "cell": "f92fa670-e03d-4393-b653-5f970b1a2964",
+      "port": "12b69819-240d-4a2c-96ee-9489badc6037"
+    },
+    "target": {
+      "cell": "1541bf27-5bf8-47c2-86ec-6349c03cd050",
+      "port": "2cee1e01-3b1c-42b0-b133-3dcf9c58face"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "e068e000-601e-415a-96fb-3e9ff628cb50"
+  }, {
+    "source": {
+      "cell": "358f9ec3-7b15-44af-b639-fbc7520d979c",
+      "port": "88461593-d83b-45ab-8b7e-4acfdbbc9923"
+    },
+    "target": {
+      "cell": "c63931bc-84ab-4713-96d4-61da5c3a9fed",
+      "port": "8c90c84f-58b7-4050-8d60-50e27984ae69"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "f13a2123-2600-4236-9cf6-0cbd9f78b6e9"
+  }, {
+    "source": {
+      "cell": "ea26e26c-fd89-4ef9-a852-7c758ae8ee65",
+      "port": "5c9fab0b-55d9-447b-87d6-48de42752a36"
+    },
+    "target": {
+      "cell": "d7c001ec-1780-4aa2-96ff-04b58cafa973",
+      "port": "28dd3b1f-3fcf-4595-be6f-adb33fd77403"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "ceae14ba-3ad0-4564-a8ac-097e806fc1c8"
+  }, {
+    "data": {
+      "conditionData": [{
+        "eventContent": "null",
+        "type": "string",
+        "condition": "!=",
+        "RselectId": "55d50aa9-dafa-41ea-9b5b-f9f7ad8d2834",
+        "id": "4673f358-68ab-4336-8f58-f2955d4ee6a0",
+        "logic": "none",
+        "Rjsonpath": "#pno_02e44ac5-6ebb-4b09-8d19-c4fee06e2970$wkt"
+      }],
+      "L": ["null"],
+      "R": ["#pno_02e44ac5-6ebb-4b09-8d19-c4fee06e2970$wkt"],
+      "jsonpathElexpression": "R0!=L0"
+    },
+    "source": {
+      "cell": "02e44ac5-6ebb-4b09-8d19-c4fee06e2970",
+      "port": "46b9bf02-79f8-48cd-97e8-1e70c625e153"
+    },
+    "target": {
+      "cell": "d30070e3-7f72-4aa2-b20a-fc361f3c2d0f",
+      "port": "e39b2f2a-61c9-458f-a298-84333c754127"
+    },
+    "cellType": "edge_decision",
+    "name": "决策线",
+    "id": "a0654e1b-cc00-4e3e-8bbe-eeaca47ce3c3"
+  }, {
+    "data": {
+      "conditionData": [{
+        "eventContent": "null",
+        "type": "string",
+        "condition": "!=",
+        "RselectId": "cdecef90-78cb-4fdd-8f3c-1c617b34be5d",
+        "id": "568bcd4e-4718-4fec-a9cf-c2868e3ff851",
+        "logic": "none",
+        "Rjsonpath": "#pno_02e44ac5-6ebb-4b09-8d19-c4fee06e2970$name"
+      }],
+      "L": ["null"],
+      "R": ["#pno_02e44ac5-6ebb-4b09-8d19-c4fee06e2970$name"],
+      "jsonpathElexpression": "R0!=L0"
+    },
+    "source": {
+      "cell": "02e44ac5-6ebb-4b09-8d19-c4fee06e2970",
+      "port": "98f92a3d-f65b-4ba6-a966-5e07bb40cc2e"
+    },
+    "target": {
+      "cell": "67d4deff-3756-4858-b199-ad42efae827e",
+      "port": "76aabc97-193e-456a-b852-6075e15cd82e"
+    },
+    "cellType": "edge_decision",
+    "name": "决策线",
+    "id": "122f85a9-f9dc-47dd-99a8-e116326c7a4b"
+  }, {
+    "source": {
+      "cell": "d47bae47-53af-4057-89ef-89204bd21c72",
+      "port": "618576f7-869a-48f0-af95-fe7ac7c1d27f"
+    },
+    "target": {
+      "cell": "c01a3eea-6330-4185-8208-6406a308eb08",
+      "port": "e5bba77e-b4cc-4620-b13e-5bae8e29db81"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "d149c054-6463-4d66-8d79-416cff2927f9"
+  }, {
+    "source": {
+      "cell": "251f8ee0-725e-4610-adcb-73ec50c4e4c0",
+      "port": "caf52e64-28c7-4b42-aacb-a25b55413714"
+    },
+    "target": {
+      "cell": "e2db88ca-8f1b-4504-9ed8-bed0e5902841",
+      "port": "ecddf0a2-1488-4586-9f24-b67972920cce"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "80b5bb1b-ff7d-422e-a8b9-65bc0b2c0ed3"
+  }, {
+    "source": {
+      "cell": "d296057e-b30c-4209-aa7c-67e6ad743893",
+      "port": "548e0875-006c-49eb-a64a-e759a0b78df9"
+    },
+    "target": {
+      "cell": "01e85599-7cd8-4a87-b8c1-47abb2dbe4e0",
+      "port": "00bb2369-b5b5-48b7-aa19-6acc4412d5cc"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "5a5885e9-90fa-43bb-a9f1-ac8ca374ccdd"
+  }, {
+    "source": {
+      "cell": "04a31c24-d2e7-46be-8080-d434043f9cbb",
+      "port": "20e73fa3-b93a-41af-ba12-e810e0ba0805"
+    },
+    "target": {
+      "cell": "de343c6f-e99a-488c-ad40-a4699e9f7669",
+      "port": "16e299ac-3c81-4ebc-a8b7-ff816ddc4c68"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "a5dfb883-60a3-446d-9830-15a45bfccd9a"
+  }, {
+    "source": {
+      "cell": "e2db88ca-8f1b-4504-9ed8-bed0e5902841",
+      "port": "44aa7cd6-390f-4803-a337-3846025f4cd2"
+    },
+    "target": {
+      "cell": "f61c18e2-df70-4f3d-8f2b-ee7b777f8631",
+      "port": "813b5e00-8a18-40d3-bfe5-c4ba87ea8336"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "1ba917f0-6e72-42bb-b19b-dc4ef6579ed8"
+  }, {
+    "source": {
+      "cell": "fa38eea8-9b75-4813-ae53-6894a13b317f",
+      "port": "9a916ccb-e347-444b-9dca-f2f27c1cb3d8"
+    },
+    "target": {
+      "cell": "8e0bcd78-4f23-451a-b944-bde94e089787",
+      "port": "39c09509-5848-4be2-922e-12eb9326eff7"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "f932253b-7276-4dda-a774-e24c14fd15dd"
+  }, {
+    "data": {
+      "conditionData": [{
+        "eventContent": "null",
+        "type": "string",
+        "condition": "!=",
+        "RselectId": "cdecef90-78cb-4fdd-8f3c-1c617b34be5d",
+        "id": "187fcb8e-4a90-4045-b10e-5c2a3e1edb8e",
+        "logic": "none",
+        "Rjsonpath": "#pno_02e44ac5-6ebb-4b09-8d19-c4fee06e2970$name"
+      }],
+      "L": ["null"],
+      "R": ["#pno_02e44ac5-6ebb-4b09-8d19-c4fee06e2970$name"],
+      "jsonpathElexpression": "R0!=L0"
+    },
+    "source": {
+      "cell": "02e44ac5-6ebb-4b09-8d19-c4fee06e2970",
+      "port": "98f92a3d-f65b-4ba6-a966-5e07bb40cc2e"
+    },
+    "target": {
+      "cell": "2b992cf2-4e80-42ee-9630-4f9b3f624276",
+      "port": "617cb8b6-defe-4be9-b47d-b7458b8582f9"
+    },
+    "cellType": "edge_decision",
+    "name": "决策线",
+    "id": "03d9d11e-24e8-401e-8d2c-deb1ba18573f"
+  }, {
+    "source": {
+      "cell": "8e0bcd78-4f23-451a-b944-bde94e089787",
+      "port": "ca5cd0b1-24ab-4957-a14c-2f884240a1e6"
+    },
+    "target": {
+      "cell": "f58f09db-1c0b-4f6b-a1a5-6165c1a34526",
+      "port": "b467f461-a4f8-434a-8bad-b6887fe10712"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "80c93c2b-ee01-43e4-bcfc-05253d546a4e"
+  }, {
+    "data": {
+      "conditionData": [{
+        "eventContent": "null",
+        "type": "string",
+        "condition": "!=",
+        "RselectId": "55d50aa9-dafa-41ea-9b5b-f9f7ad8d2834",
+        "id": "7750994f-d82a-4ece-b0e1-d651f163d3c2",
+        "logic": "none",
+        "Rjsonpath": "#pno_02e44ac5-6ebb-4b09-8d19-c4fee06e2970$wkt"
+      }],
+      "L": ["null"],
+      "R": ["#pno_02e44ac5-6ebb-4b09-8d19-c4fee06e2970$wkt"],
+      "jsonpathElexpression": "R0!=L0"
+    },
+    "source": {
+      "cell": "02e44ac5-6ebb-4b09-8d19-c4fee06e2970",
+      "port": "46b9bf02-79f8-48cd-97e8-1e70c625e153"
+    },
+    "target": {
+      "cell": "e21328c0-b4cf-4d11-8c09-50f546e60949",
+      "port": "029fda23-b761-4c67-8a58-184758517e65"
+    },
+    "cellType": "edge_decision",
+    "name": "决策线",
+    "id": "ffc32cc5-5ce1-4540-baa4-aca245eaabca"
+  }, {
+    "source": {
+      "cell": "d9f842d7-b080-4f13-a189-445a35223eee",
+      "port": "546cf41a-40d9-484a-8e7d-27fd8b4c2a98"
+    },
+    "target": {
+      "cell": "b95da97c-f9dc-402f-bb3f-d3f647486450",
+      "port": "7973572a-a0ce-4867-aafe-04a685e17294"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "fc6a6115-1be9-428e-b266-65b970074c1c"
+  }, {
+    "source": {
+      "cell": "01e85599-7cd8-4a87-b8c1-47abb2dbe4e0",
+      "port": "b58a5c88-6492-4503-a583-e8ec6e805ba8"
+    },
+    "target": {
+      "cell": "a60f0027-152f-4d91-9deb-98240bb16b4c",
+      "port": "810954cc-571b-4d97-a2b8-f7134b0b54ea"
+    },
+    "cellType": "edge_common",
+    "name": "普通线",
+    "id": "72751fb1-7c15-4919-b016-afba4fa3e64e"
+  }, {
+    "data": {
+      "transformRules": [{
+        "jsonpathMapping": "#start_$wkt",
+        "type": "default",
+        "key": "wkt"
+      }, {
+        "jsonpathMapping": "#start_$name",
+        "type": "default",
+        "key": "name"
+      }]
+    },
+    "cellType": "node_inner_transform2Obj",
+    "name": "数据流转",
+    "id": "02e44ac5-6ebb-4b09-8d19-c4fee06e2970"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"approvalst\":{\"type\":\"string\"},\"orecid\":{\"type\":\"string\"},\"jid\":{\"type\":\"string\"},\"xmdm\":{\"type\":\"string\"},\"dkmj\":{\"type\":\"number\"},\"rid\":{\"type\":\"string\"},\"dkid\":{\"type\":\"string\"},\"dkyt\":{\"type\":\"string\"},\"jbnt\":{\"type\":\"string\"},\"pzjsydmj\":{\"type\":\"string\"},\"sszsxzqdm\":{\"type\":\"string\"},\"opyear\":{\"type\":\"string\"},\"xmtype\":{\"type\":\"string\"},\"zszmj\":{\"type\":\"number\"},\"pzsj\":{\"type\":\"string\"},\"xmjb\":{\"type\":\"string\"},\"dgnd\":{\"type\":\"string\"},\"pzgyzmj\":{\"type\":\"string\"},\"wlyd\":{\"type\":\"string\"},\"gd\":{\"type\":\"string\"},\"recid\":{\"type\":\"string\"},\"ssxsxzqdm\":{\"type\":\"string\"},\"dkbh\":{\"type\":\"string\"},\"bizname\":{\"type\":\"string\"},\"shape\":{\"type\":\"string\"},\"sszsmc\":{\"type\":\"string\"},\"zsscjid\":{\"type\":\"string\"},\"jsyd\":{\"type\":\"string\"},\"updateTime\":{\"type\":\"string\"},\"jzds\":{\"type\":\"string\"},\"detailnum\":{\"type\":\"string\"},\"dkmc\":{\"type\":\"string\"},\"pfwh\":{\"type\":\"string\"},\"xmmc\":{\"type\":\"string\"},\"pzjb\":{\"type\":\"string\"},\"pzjtzmj\":{\"type\":\"string\"},\"geodesic_Area\":{\"type\":\"string\"},\"bizid\":{\"type\":\"string\"},\"nyd\":{\"type\":\"string\"},\"xzjsyd\":{\"type\":\"string\"},\"guid\":{\"type\":\"string\"},\"xmlx\":{\"type\":\"string\"},\"ssxsmc\":{\"type\":\"string\"},\"dklx\":{\"type\":\"string\"},\"csjid\":{\"type\":\"string\"},\"zjjid\":{\"type\":\"string\"},\"cantoncode\":{\"type\":\"string\"}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "POST",
+      "inputs": {
+        "reqBodyType": "json",
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"inSR\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"outFields\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"where\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"geometry\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"returnGeometry\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"spatialRel\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"geometryType\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"outSR\":{\"jsonpathMapping\":\"\",\"type\":\"string\"}}}",
+        "reqBodyForm": []
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/jsyd-openapi/query/pgquery",
+      "protocol": "restful",
+      "registeredOperatorId": "99594271-5ab7-4361-89e8-6ad6b3793984"
+    },
+    "ports": {
+      "items": [{
+        "id": "ef149b2c-6aba-46bf-9368-64b6e20ed874"
+      }, {
+        "id": "0c40df5f-7ca8-4c14-b668-a1818309bd58"
+      }, {
+        "id": "d063c5b2-e829-47e3-9543-724fc6e0960c"
+      }, {
+        "id": "e9a05d48-b336-4949-a5ab-5e9e82e3d76a"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "建设用地空间信息查询（工作库）",
+    "id": "1c364543-5daf-4944-95a8-44344da95052"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "c6d3d4a9-e524-4057-9b63-15e750ed4e67"
+      }, {
+        "id": "a4d0f9f9-df1c-40cf-b22f-3d1b0dffa39f"
+      }, {
+        "id": "deb98d6c-d99f-4d8b-81b3-faceb7d284f9"
+      }, {
+        "id": "65a3e7aa-821c-4e26-bed0-611a366e4a1b"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "工作库查询结果",
+    "id": "d6342a1a-3b75-47b2-9384-c2c3da900b75"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"globalIdFieldName\":{\"type\":\"string\"},\"objectIdFieldName\":{\"type\":\"string\"},\"features\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"attributes\":{\"type\":\"object\",\"properties\":{\"OPYEAR\":{\"type\":\"number\"},\"XMMC\":{\"type\":\"string\"},\"DKYT\":{\"type\":\"object\"},\"PFWH\":{\"type\":\"string\"},\"DKMJ\":{\"type\":\"number\"},\"PZSJ\":{\"type\":\"number\"},\"SSXSXZQDM\":{\"type\":\"string\"},\"PZJB\":{\"type\":\"object\"},\"RECID\":{\"type\":\"number\"},\"DETAILNUM\":{\"type\":\"number\"},\"GUID\":{\"type\":\"object\"},\"APPROVALSTATE\":{\"type\":\"number\"},\"CANTONCODE\":{\"type\":\"string\"},\"BIZID\":{\"type\":\"number\"},\"SSXSMC\":{\"type\":\"string\"},\"DKBH\":{\"type\":\"string\"},\"ORECID\":{\"type\":\"number\"},\"OBJECTID\":{\"type\":\"number\"},\"SSZSMC\":{\"type\":\"string\"},\"XMDM\":{\"type\":\"string\"},\"SSZSXZQDM\":{\"type\":\"string\"},\"BIZNAME\":{\"type\":\"string\"},\"JZDS\":{\"type\":\"number\"},\"DKMC\":{\"type\":\"object\"}}},\"geometry\":{\"type\":\"object\",\"properties\":{\"rings\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}}}}}}}}},\"spatialReference\":{\"type\":\"object\",\"properties\":{\"latestWkid\":{\"type\":\"number\"},\"wkid\":{\"type\":\"number\"}}},\"fields\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"alias\":{\"type\":\"string\"}}}},\"geometryType\":{\"type\":\"string\"}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "POST",
+      "inputs": {
+        "reqBodyType": "form",
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": [{
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "5b776ea5-1805-4367-b7dd-e29b367f5a08",
+          "key": "where"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "ab300584-d02f-4672-8bd3-e15e3e11dd8d",
+          "key": "geometry"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "3fa3f958-6d42-47ec-b7d3-9993d97f2bd2",
+          "key": "geometryType"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "43125521-f668-49a4-afc7-b6cb3cf85f2f",
+          "key": "inSR"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "74cb7ce5-db63-4249-afef-6edf0637d07a",
+          "key": "spatialRel"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "d6626fd0-4aa4-4b5b-bc07-f288bad63054",
+          "key": "outFields"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "e28d756b-8dd7-44da-a4b2-f8f5cd86132d",
+          "key": "returnGeometry"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "9d3a4184-4efd-4e1c-839a-c86f5c47fe71",
+          "key": "outSR"
+        }]
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/arcgis/rest/services/JSYDSP/ZNSP_WORK/MapServer/0",
+      "protocol": "restful",
+      "registeredOperatorId": "a1ff3260-21bd-4531-8d35-eb3507007ce0"
+    },
+    "ports": {
+      "items": [{
+        "id": "aecc7de9-9274-4017-bb9d-c758f8fa7a70"
+      }, {
+        "id": "95abc7c3-caf7-42e7-a6cc-6f44b0d15f38"
+      }, {
+        "id": "cf0aee62-4e16-4884-99f8-2ed34578c48b"
+      }, {
+        "id": "7751c287-aaea-4260-935b-71cbc166b431"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "建设用地空间信息查询（成果库）",
+    "id": "c14ded14-677b-4b40-b83c-660af439d2df"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "62b4a03c-8753-4bc8-a159-fd819b18f290"
+      }, {
+        "id": "5c9fab0b-55d9-447b-87d6-48de42752a36"
+      }, {
+        "id": "4a1cd098-f168-4c8e-af1b-8b766d30a1c4"
+      }, {
+        "id": "820aed81-6364-4f85-b83e-cf9056e0d554"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "成果库查询结果",
+    "id": "ea26e26c-fd89-4ef9-a852-7c758ae8ee65"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"zsscjid\":{\"type\":\"string\"},\"xmmc\":{\"type\":\"string\"},\"xmtype\":{\"type\":\"string\"},\"zszmj\":{\"type\":\"number\"},\"xzjsyd\":{\"type\":\"string\"},\"stateInfo\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"date\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"}}}},\"state\":{\"type\":\"string\"},\"zjjid\":{\"type\":\"string\"}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "GET",
+      "inputs": {
+        "reqBodyType": "json",
+        "reqHeaders": [],
+        "reqQuery": [{
+          "jsonpathMapping": "",
+          "type": "string",
+          "id": "2de1b6d7-5164-40ac-a4a5-e20b65d066c6",
+          "key": "id"
+        }, {
+          "jsonpathMapping": "",
+          "type": "string",
+          "id": "27cb4568-4278-4740-a2b4-6ed63c12ba61",
+          "key": "name"
+        }],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": []
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/jsyd-openapi/query/findbo",
+      "protocol": "restful",
+      "registeredOperatorId": "f7711724-4dd4-4038-b40d-e58a028e6e37"
+    },
+    "ports": {
+      "items": [{
+        "id": "6d48a67c-a408-4c47-8f1f-fc5e9b709a18"
+      }, {
+        "id": "6735e34a-01aa-42b0-9e76-8e9d117f10de"
+      }, {
+        "id": "72b75ffa-cf39-44e6-864d-4bdde940e3a1"
+      }, {
+        "id": "2f5ff44b-d659-45fd-8c5d-004b4fa4cf99"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "查建设用地审批明细",
+    "id": "598d12dc-2b1c-41f3-aee2-0a42b706e261"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "5c76545a-c5a3-416e-a2d0-1590e3d89bc5"
+      }, {
+        "id": "618576f7-869a-48f0-af95-fe7ac7c1d27f"
+      }, {
+        "id": "42d05bb9-dda4-4b69-92f6-a0557fb4a5b9"
+      }, {
+        "id": "38b0a135-bfa9-4654-8bbe-a54aaaedaf3c"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "审批明细结果",
+    "id": "d47bae47-53af-4057-89ef-89204bd21c72"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"approvalst\":{\"type\":\"string\"},\"orecid\":{\"type\":\"string\"},\"jid\":{\"type\":\"string\"},\"xmdm\":{\"type\":\"string\"},\"dkmj\":{\"type\":\"number\"},\"rid\":{\"type\":\"string\"},\"dkid\":{\"type\":\"string\"},\"dkyt\":{\"type\":\"string\"},\"jbnt\":{\"type\":\"string\"},\"pzjsydmj\":{\"type\":\"string\"},\"sszsxzqdm\":{\"type\":\"string\"},\"opyear\":{\"type\":\"string\"},\"xmtype\":{\"type\":\"string\"},\"zszmj\":{\"type\":\"number\"},\"pzsj\":{\"type\":\"string\"},\"xmjb\":{\"type\":\"string\"},\"dgnd\":{\"type\":\"string\"},\"pzgyzmj\":{\"type\":\"string\"},\"wlyd\":{\"type\":\"string\"},\"gd\":{\"type\":\"string\"},\"recid\":{\"type\":\"string\"},\"ssxsxzqdm\":{\"type\":\"string\"},\"dkbh\":{\"type\":\"string\"},\"bizname\":{\"type\":\"string\"},\"shape\":{\"type\":\"string\"},\"sszsmc\":{\"type\":\"string\"},\"zsscjid\":{\"type\":\"string\"},\"jsyd\":{\"type\":\"string\"},\"updateTime\":{\"type\":\"string\"},\"jzds\":{\"type\":\"string\"},\"detailnum\":{\"type\":\"string\"},\"dkmc\":{\"type\":\"string\"},\"pfwh\":{\"type\":\"string\"},\"xmmc\":{\"type\":\"string\"},\"pzjb\":{\"type\":\"string\"},\"pzjtzmj\":{\"type\":\"string\"},\"geodesic_Area\":{\"type\":\"string\"},\"bizid\":{\"type\":\"string\"},\"nyd\":{\"type\":\"string\"},\"xzjsyd\":{\"type\":\"string\"},\"guid\":{\"type\":\"string\"},\"xmlx\":{\"type\":\"string\"},\"ssxsmc\":{\"type\":\"string\"},\"dklx\":{\"type\":\"string\"},\"csjid\":{\"type\":\"string\"},\"zjjid\":{\"type\":\"string\"},\"cantoncode\":{\"type\":\"string\"}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "POST",
+      "inputs": {
+        "reqBodyType": "json",
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"inSR\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"outFields\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"where\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"geometry\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"returnGeometry\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"spatialRel\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"geometryType\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"outSR\":{\"jsonpathMapping\":\"\",\"type\":\"string\"}}}",
+        "reqBodyForm": []
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/jsyd-openapi/query/pgquery",
+      "protocol": "restful",
+      "registeredOperatorId": "99594271-5ab7-4361-89e8-6ad6b3793984"
+    },
+    "ports": {
+      "items": [{
+        "id": "a10cd6d4-7dd4-4eab-b260-dd81eb58ec7e"
+      }, {
+        "id": "66180bfd-c9c3-4dca-81b8-41c6907b996b"
+      }, {
+        "id": "3e52a8c2-549d-4090-93a6-c515499abd41"
+      }, {
+        "id": "11cfe7a5-7683-42f7-a84c-8cb8fdf3a450"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "建设用地空间信息查询（工作库）",
+    "id": "d2b8310e-4769-4e89-a071-4715b19b8370"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "1e10fbcc-e061-4900-bf21-c3e4f55133c4"
+      }, {
+        "id": "20e73fa3-b93a-41af-ba12-e810e0ba0805"
+      }, {
+        "id": "d7e4649f-ed77-4140-97b0-2f8f19992f72"
+      }, {
+        "id": "c309a8d4-0058-44bb-bd30-2029bc86cfc2"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "工作库查询结果",
+    "id": "04a31c24-d2e7-46be-8080-d434043f9cbb"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"zsscjid\":{\"type\":\"string\"},\"xmmc\":{\"type\":\"string\"},\"xmtype\":{\"type\":\"string\"},\"zszmj\":{\"type\":\"number\"},\"xzjsyd\":{\"type\":\"string\"},\"stateInfo\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"date\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"}}}},\"state\":{\"type\":\"string\"},\"zjjid\":{\"type\":\"string\"}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "GET",
+      "inputs": {
+        "reqBodyType": "json",
+        "reqHeaders": [],
+        "reqQuery": [{
+          "jsonpathMapping": "",
+          "type": "string",
+          "id": "2de1b6d7-5164-40ac-a4a5-e20b65d066c6",
+          "key": "id"
+        }, {
+          "jsonpathMapping": "",
+          "type": "string",
+          "id": "27cb4568-4278-4740-a2b4-6ed63c12ba61",
+          "key": "name"
+        }],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": []
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/jsyd-openapi/query/findbo",
+      "protocol": "restful",
+      "registeredOperatorId": "f7711724-4dd4-4038-b40d-e58a028e6e37"
+    },
+    "ports": {
+      "items": [{
+        "id": "b005831f-38a5-4a53-ab80-e65b53814d80"
+      }, {
+        "id": "52752ecb-8026-443d-bdd9-c148e020e910"
+      }, {
+        "id": "e8e8d06e-e965-450c-a1eb-44d54bf80cf7"
+      }, {
+        "id": "48ee14de-c82e-405a-861c-8615a913a706"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "查建设用地审批明细",
+    "id": "0d88800b-5adb-444b-b915-af8e11ef754e"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "fd5020ba-f538-4729-a0ac-29fb68de1e89"
+      }, {
+        "id": "12b69819-240d-4a2c-96ee-9489badc6037"
+      }, {
+        "id": "27cdd2af-8c44-4976-b73e-a9ab19d8ea86"
+      }, {
+        "id": "d15d4f84-b231-4e31-8a0b-62571fa1f0a5"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "审批明细结果",
+    "id": "f92fa670-e03d-4393-b653-5f970b1a2964"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"res\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "POST",
+      "inputs": {
+        "reqBodyType": "json",
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"coreData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": []
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/coreAndSpaceAndBo",
+      "protocol": "restful",
+      "registeredOperatorId": "778ec490-503e-43ba-9e66-bfbf40ae082a"
+    },
+    "ports": {
+      "items": [{
+        "id": "e474ad28-fbcf-45bd-a27b-776f0ce40022"
+      }, {
+        "id": "c917981c-dc2c-44b9-81ea-032b2d2b6d8a"
+      }, {
+        "id": "90ac9956-7508-4c12-a085-0668ba2fde45"
+      }, {
+        "id": "eb3dba61-7a0f-466d-9301-34d3b70a3a0f"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "建设用地成果库与工作库信息聚合",
+    "id": "9d49f2fd-81b8-4c85-ae75-98e6ea37bb57"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "62e03b9f-5d61-4587-958d-a4008aa56b25"
+      }, {
+        "id": "546cf41a-40d9-484a-8e7d-27fd8b4c2a98"
+      }, {
+        "id": "126ea64b-c74b-4435-9597-e49e263db8bf"
+      }, {
+        "id": "855764b8-e52c-43c8-b9b8-e7559976d6c8"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "建设用地成果库与工作库信息聚合",
+    "id": "d9f842d7-b080-4f13-a189-445a35223eee"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"approvalst\":{\"type\":\"string\"},\"jid\":{\"type\":\"string\"},\"xmdm\":{\"type\":\"string\"},\"rid\":{\"type\":\"string\"},\"pzjsydmj\":{\"type\":\"string\"},\"wlyd\":{\"type\":\"string\"},\"state\":{\"type\":\"string\"},\"ssxsxzqdm\":{\"type\":\"string\"},\"dkbh\":{\"type\":\"string\"},\"bizname\":{\"type\":\"string\"},\"shape\":{\"type\":\"string\"},\"sszsmc\":{\"type\":\"string\"},\"jsyd\":{\"type\":\"string\"},\"pzjtzmj\":{\"type\":\"string\"},\"xzjsyd\":{\"type\":\"string\"},\"guid\":{\"type\":\"string\"},\"csjid\":{\"type\":\"string\"},\"zjjid\":{\"type\":\"string\"},\"orecid\":{\"type\":\"string\"},\"dkmj\":{\"type\":\"number\"},\"dkid\":{\"type\":\"string\"},\"dkyt\":{\"type\":\"string\"},\"jbnt\":{\"type\":\"string\"},\"sszsxzqdm\":{\"type\":\"string\"},\"opyear\":{\"type\":\"string\"},\"xmtype\":{\"type\":\"string\"},\"zszmj\":{\"type\":\"number\"},\"pzsj\":{\"type\":\"string\"},\"xmjb\":{\"type\":\"string\"},\"dgnd\":{\"type\":\"string\"},\"pzgyzmj\":{\"type\":\"string\"},\"gd\":{\"type\":\"string\"},\"recid\":{\"type\":\"string\"},\"zsscjid\":{\"type\":\"string\"},\"updateTime\":{\"type\":\"string\"},\"jzds\":{\"type\":\"string\"},\"detailnum\":{\"type\":\"string\"},\"dkmc\":{\"type\":\"string\"},\"pfwh\":{\"type\":\"string\"},\"xmmc\":{\"type\":\"string\"},\"pzjb\":{\"type\":\"string\"},\"geodesic_Area\":{\"type\":\"string\"},\"bizid\":{\"type\":\"string\"},\"nyd\":{\"type\":\"string\"},\"xmlx\":{\"type\":\"string\"},\"stateInfo\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"date\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"}}}},\"ssxsmc\":{\"type\":\"string\"},\"dklx\":{\"type\":\"string\"},\"cantoncode\":{\"type\":\"string\"}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "POST",
+      "inputs": {
+        "reqBodyType": "json",
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": []
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/spaceAndBo",
+      "protocol": "restful",
+      "registeredOperatorId": "c2c38a06-69b2-46d5-8a21-fa21d2f53797"
+    },
+    "ports": {
+      "items": [{
+        "id": "77daeb4f-36c4-4112-a5a6-c72a7dff9d15"
+      }, {
+        "id": "ed7b0509-044f-41f4-a466-11971ec93a7c"
+      }, {
+        "id": "f913af5f-f301-474b-8810-d972d52c9b89"
+      }, {
+        "id": "34ca7fad-7151-42f2-b6b5-5acd633d4a0b"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "建设用地空间信息与审批信息聚合",
+    "id": "ab5178c6-e44c-4112-8fdd-58eef07e815f"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "ad6953c0-99c1-4b00-839a-4b30747b099f"
+      }, {
+        "id": "dd07090e-76e4-42e4-b2fb-a9184c8ff5ff"
+      }, {
+        "id": "88461593-d83b-45ab-8b7e-4acfdbbc9923"
+      }, {
+        "id": "f7953cab-f4e3-4b5c-a310-62b2f8ac195e"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "建设用地空间信息与审批信息聚合",
+    "id": "358f9ec3-7b15-44af-b639-fbc7520d979c"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"approvalst\":{\"type\":\"string\"},\"jid\":{\"type\":\"string\"},\"xmdm\":{\"type\":\"string\"},\"rid\":{\"type\":\"string\"},\"pzjsydmj\":{\"type\":\"string\"},\"wlyd\":{\"type\":\"string\"},\"state\":{\"type\":\"string\"},\"ssxsxzqdm\":{\"type\":\"string\"},\"dkbh\":{\"type\":\"string\"},\"bizname\":{\"type\":\"string\"},\"shape\":{\"type\":\"string\"},\"sszsmc\":{\"type\":\"string\"},\"jsyd\":{\"type\":\"string\"},\"pzjtzmj\":{\"type\":\"string\"},\"xzjsyd\":{\"type\":\"string\"},\"guid\":{\"type\":\"string\"},\"csjid\":{\"type\":\"string\"},\"zjjid\":{\"type\":\"string\"},\"orecid\":{\"type\":\"string\"},\"dkmj\":{\"type\":\"number\"},\"dkid\":{\"type\":\"string\"},\"dkyt\":{\"type\":\"string\"},\"jbnt\":{\"type\":\"string\"},\"sszsxzqdm\":{\"type\":\"string\"},\"opyear\":{\"type\":\"string\"},\"xmtype\":{\"type\":\"string\"},\"zszmj\":{\"type\":\"number\"},\"pzsj\":{\"type\":\"string\"},\"xmjb\":{\"type\":\"string\"},\"dgnd\":{\"type\":\"string\"},\"pzgyzmj\":{\"type\":\"string\"},\"gd\":{\"type\":\"string\"},\"recid\":{\"type\":\"string\"},\"zsscjid\":{\"type\":\"string\"},\"updateTime\":{\"type\":\"string\"},\"jzds\":{\"type\":\"string\"},\"detailnum\":{\"type\":\"string\"},\"dkmc\":{\"type\":\"string\"},\"pfwh\":{\"type\":\"string\"},\"xmmc\":{\"type\":\"string\"},\"pzjb\":{\"type\":\"string\"},\"geodesic_Area\":{\"type\":\"string\"},\"bizid\":{\"type\":\"string\"},\"nyd\":{\"type\":\"string\"},\"xmlx\":{\"type\":\"string\"},\"stateInfo\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"date\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"}}}},\"ssxsmc\":{\"type\":\"string\"},\"dklx\":{\"type\":\"string\"},\"cantoncode\":{\"type\":\"string\"}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "POST",
+      "inputs": {
+        "reqBodyType": "json",
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": []
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/spaceAndBo",
+      "protocol": "restful",
+      "registeredOperatorId": "c2c38a06-69b2-46d5-8a21-fa21d2f53797"
+    },
+    "ports": {
+      "items": [{
+        "id": "59cc26e8-ddaa-4df6-8315-18256884368a"
+      }, {
+        "id": "caf52e64-28c7-4b42-aacb-a25b55413714"
+      }, {
+        "id": "d51159c7-aa4b-4a2c-a837-7d0a1c965590"
+      }, {
+        "id": "c066954b-c3bb-4d62-970b-32ac9e043497"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "建设用地空间信息与审批信息聚合",
+    "id": "251f8ee0-725e-4610-adcb-73ec50c4e4c0"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "ecddf0a2-1488-4586-9f24-b67972920cce"
+      }, {
+        "id": "8167bf8f-f16f-4b5f-9b0d-bb06f104be7b"
+      }, {
+        "id": "44aa7cd6-390f-4803-a337-3846025f4cd2"
+      }, {
+        "id": "9d77b455-7e3e-44e5-a8b9-29a5198139fe"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "建设用地空间信息与审批信息聚合",
+    "id": "e2db88ca-8f1b-4504-9ed8-bed0e5902841"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"res\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "POST",
+      "inputs": {
+        "reqBodyType": "json",
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"coreData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": []
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/coreAndSpaceAndBo",
+      "protocol": "restful",
+      "registeredOperatorId": "778ec490-503e-43ba-9e66-bfbf40ae082a"
+    },
+    "ports": {
+      "items": [{
+        "id": "7a4d9398-917b-44c2-9de2-e4b47e59799a"
+      }, {
+        "id": "548e0875-006c-49eb-a64a-e759a0b78df9"
+      }, {
+        "id": "bde5d93f-3551-486c-b621-46e68c16fd72"
+      }, {
+        "id": "1b8fa4cf-75c3-424f-8042-e5445c71458e"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "建设用地成果库与工作库信息聚合",
+    "id": "d296057e-b30c-4209-aa7c-67e6ad743893"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "00bb2369-b5b5-48b7-aa19-6acc4412d5cc"
+      }, {
+        "id": "b58a5c88-6492-4503-a583-e8ec6e805ba8"
+      }, {
+        "id": "cd0f46f2-487e-4961-83b9-101b11d1892c"
+      }, {
+        "id": "7956533a-eeee-4658-ae57-8cf36dcd18b1"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "建设用地成果库与工作库信息聚合",
+    "id": "01e85599-7cd8-4a87-b8c1-47abb2dbe4e0"
+  }, {
+    "data": {
+      "outputs": {
+        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"globalIdFieldName\":{\"type\":\"string\"},\"objectIdFieldName\":{\"type\":\"string\"},\"features\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"attributes\":{\"type\":\"object\",\"properties\":{\"OPYEAR\":{\"type\":\"number\"},\"XMMC\":{\"type\":\"string\"},\"DKYT\":{\"type\":\"object\"},\"PFWH\":{\"type\":\"string\"},\"DKMJ\":{\"type\":\"number\"},\"PZSJ\":{\"type\":\"number\"},\"SSXSXZQDM\":{\"type\":\"string\"},\"PZJB\":{\"type\":\"object\"},\"RECID\":{\"type\":\"number\"},\"DETAILNUM\":{\"type\":\"number\"},\"GUID\":{\"type\":\"object\"},\"APPROVALSTATE\":{\"type\":\"number\"},\"CANTONCODE\":{\"type\":\"string\"},\"BIZID\":{\"type\":\"number\"},\"SSXSMC\":{\"type\":\"string\"},\"DKBH\":{\"type\":\"string\"},\"ORECID\":{\"type\":\"number\"},\"OBJECTID\":{\"type\":\"number\"},\"SSZSMC\":{\"type\":\"string\"},\"XMDM\":{\"type\":\"string\"},\"SSZSXZQDM\":{\"type\":\"string\"},\"BIZNAME\":{\"type\":\"string\"},\"JZDS\":{\"type\":\"number\"},\"DKMC\":{\"type\":\"object\"}}},\"geometry\":{\"type\":\"object\",\"properties\":{\"rings\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}}}}}}}}},\"spatialReference\":{\"type\":\"object\",\"properties\":{\"latestWkid\":{\"type\":\"number\"},\"wkid\":{\"type\":\"number\"}}},\"fields\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"alias\":{\"type\":\"string\"}}}},\"geometryType\":{\"type\":\"string\"}}}",
+        "contentType": "application/json"
+      },
+      "requestType": "POST",
+      "inputs": {
+        "reqBodyType": "form",
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": [{
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "5b776ea5-1805-4367-b7dd-e29b367f5a08",
+          "key": "where"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "ab300584-d02f-4672-8bd3-e15e3e11dd8d",
+          "key": "geometry"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "3fa3f958-6d42-47ec-b7d3-9993d97f2bd2",
+          "key": "geometryType"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "43125521-f668-49a4-afc7-b6cb3cf85f2f",
+          "key": "inSR"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "74cb7ce5-db63-4249-afef-6edf0637d07a",
+          "key": "spatialRel"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "d6626fd0-4aa4-4b5b-bc07-f288bad63054",
+          "key": "outFields"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "e28d756b-8dd7-44da-a4b2-f8f5cd86132d",
+          "key": "returnGeometry"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "9d3a4184-4efd-4e1c-839a-c86f5c47fe71",
+          "key": "outSR"
+        }]
+      },
+      "url": "http://192.168.10.163:3000/mock/1206/arcgis/rest/services/JSYDSP/ZNSP_WORK/MapServer/0",
+      "protocol": "restful",
+      "registeredOperatorId": "a1ff3260-21bd-4531-8d35-eb3507007ce0"
+    },
+    "ports": {
+      "items": [{
+        "id": "47136728-4baa-47ae-a070-487570a0a8ab"
+      }, {
+        "id": "9a916ccb-e347-444b-9dca-f2f27c1cb3d8"
+      }, {
+        "id": "b90cf68d-a5bb-4536-978e-e78e6894aee1"
+      }, {
+        "id": "76acc8cd-3c76-44bc-b9e4-9313c69fb4a9"
+      }]
+    },
+    "cellType": "node_outer_http",
+    "name": "建设用地空间信息查询（成果库）",
+    "id": "fa38eea8-9b75-4813-ae53-6894a13b317f"
+  }, {
+    "ports": {
+      "items": [{
+        "id": "39c09509-5848-4be2-922e-12eb9326eff7"
+      }, {
+        "id": "ca5cd0b1-24ab-4957-a14c-2f884240a1e6"
+      }, {
+        "id": "f02358eb-446e-4392-a1e5-32f4bed10cdd"
+      }, {
+        "id": "73ff0198-a0a8-483f-af60-27f6637528fb"
+      }]
+    },
+    "cellType": "node_inner_dataresult",
+    "name": "成果库查询结果",
+    "id": "8e0bcd78-4f23-451a-b944-bde94e089787"
+  }, {
+    "data": {
+      "transformRules": [{
+        "jsonpathMapping": "#pno_9d49f2fd-81b8-4c85-ae75-98e6ea37bb57$res",
+        "type": "default",
+        "key": "wktData"
+      }]
+    },
+    "cellType": "node_inner_transform2Obj",
+    "name": "数据处理",
+    "id": "b95da97c-f9dc-402f-bb3f-d3f647486450"
+  }, {
+    "data": {
+      "transformRules": [{
+        "jsonpathMapping": "#pno_d296057e-b30c-4209-aa7c-67e6ad743893$res",
+        "type": "default",
+        "key": "nameData"
+      }]
+    },
+    "cellType": "node_inner_transform2Obj",
+    "name": "数据处理",
+    "id": "a60f0027-152f-4d91-9deb-98240bb16b4c"
+  }, {
+    "cellType": "node_inner_datamap",
+    "name": "数据映射",
+    "id": "1c480fb3-e823-4f8d-b0ff-57ed333e3f93"
+  }, {
+    "data": {
+      "requestMethod": "POST",
+      "inputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"text\"},\"wkt\":{\"type\":\"text\"},\"coreData\":{\"type\":\"text\"},\"spaceData\":{\"type\":\"text\"},\"inSR\":{\"type\":\"text\"},\"outFields\":{\"type\":\"text\"},\"name\":{\"type\":\"text\"},\"where\":{\"type\":\"text\"},\"geometry\":{\"type\":\"text\"},\"returnGeometry\":{\"type\":\"text\"},\"id\":{\"type\":\"text\"},\"spatialRel\":{\"type\":\"text\"},\"geometryType\":{\"type\":\"text\"},\"outSR\":{\"type\":\"text\"}}}"
+    },
+    "cellType": "node_start",
+    "name": "开始",
+    "id": "5f4b201a-8f0b-41a9-86e3-29ee6ba9bf6c"
+  }, {
+    "data": {
+      "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"wktData\":{\"jsonpathMapping\":\"#pno_b95da97c-f9dc-402f-bb3f-d3f647486450$wktData\",\"type\":\"array\"},\"nameData\":{\"jsonpathMapping\":\"#pno_a60f0027-152f-4d91-9deb-98240bb16b4c$nameData\",\"type\":\"array\"}}}",
+      "contentType": "application/json"
+    },
+    "cellType": "node_end",
+    "name": "结束",
+    "id": "263ddb60-7aec-40e2-bce2-42538d589bb3"
+  }, {
+    "data": {
+      "staticParams": [],
+      "dynamicParams": []
+    },
+    "cellType": "global_Data",
+    "name": "全局参数",
+    "id": "26588015-ac8e-4695-88b2-225ab4c34340"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"coreData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "b467f461-a4f8-434a-8bad-b6887fe10712"
+      }, {
+        "id": "32a4d96f-7452-4b85-8846-803bfec9b326"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400134",
+    "id": "f58f09db-1c0b-4f6b-a1a5-6165c1a34526"
+  }, {
+    "source": {
+      "cell": "f58f09db-1c0b-4f6b-a1a5-6165c1a34526",
+      "port": "32a4d96f-7452-4b85-8846-803bfec9b326"
+    },
+    "target": {
+      "cell": "d296057e-b30c-4209-aa7c-67e6ad743893",
+      "port": "7a4d9398-917b-44c2-9de2-e4b47e59799a"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400141",
+    "id": "9fee50b7-dda5-4879-b8b1-5c5977e419c0"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "16e299ac-3c81-4ebc-a8b7-ff816ddc4c68"
+      }, {
+        "id": "cae225a9-4391-4e11-b70e-972037385d79"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400141",
+    "id": "de343c6f-e99a-488c-ad40-a4699e9f7669"
+  }, {
+    "source": {
+      "cell": "de343c6f-e99a-488c-ad40-a4699e9f7669",
+      "port": "cae225a9-4391-4e11-b70e-972037385d79"
+    },
+    "target": {
+      "cell": "251f8ee0-725e-4610-adcb-73ec50c4e4c0",
+      "port": "59cc26e8-ddaa-4df6-8315-18256884368a"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400142",
+    "id": "5f20e70c-4f62-4e03-bf5a-fdefe1d603ae"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"coreData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "28dd3b1f-3fcf-4595-be6f-adb33fd77403"
+      }, {
+        "id": "cc367582-15e6-49ea-9788-ae6509fdf99a"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400142",
+    "id": "d7c001ec-1780-4aa2-96ff-04b58cafa973"
+  }, {
+    "source": {
+      "cell": "d7c001ec-1780-4aa2-96ff-04b58cafa973",
+      "port": "cc367582-15e6-49ea-9788-ae6509fdf99a"
+    },
+    "target": {
+      "cell": "9d49f2fd-81b8-4c85-ae75-98e6ea37bb57",
+      "port": "e474ad28-fbcf-45bd-a27b-776f0ce40022"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400142",
+    "id": "fc97f99d-07b0-4c17-880e-ac8074affe1a"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": [{
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "5b776ea5-1805-4367-b7dd-e29b367f5a08",
+          "key": "where"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "ab300584-d02f-4672-8bd3-e15e3e11dd8d",
+          "key": "geometry"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "3fa3f958-6d42-47ec-b7d3-9993d97f2bd2",
+          "key": "geometryType"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "43125521-f668-49a4-afc7-b6cb3cf85f2f",
+          "key": "inSR"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "74cb7ce5-db63-4249-afef-6edf0637d07a",
+          "key": "spatialRel"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "d6626fd0-4aa4-4b5b-bc07-f288bad63054",
+          "key": "outFields"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "e28d756b-8dd7-44da-a4b2-f8f5cd86132d",
+          "key": "returnGeometry"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "9d3a4184-4efd-4e1c-839a-c86f5c47fe71",
+          "key": "outSR"
+        }],
+        "reqBodyType": "form"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "029fda23-b761-4c67-8a58-184758517e65"
+      }, {
+        "id": "4e4d22b5-1bc0-4863-ae41-45a9713eedb5"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400142",
+    "id": "e21328c0-b4cf-4d11-8c09-50f546e60949"
+  }, {
+    "source": {
+      "cell": "e21328c0-b4cf-4d11-8c09-50f546e60949",
+      "port": "4e4d22b5-1bc0-4863-ae41-45a9713eedb5"
+    },
+    "target": {
+      "cell": "c14ded14-677b-4b40-b83c-660af439d2df",
+      "port": "aecc7de9-9274-4017-bb9d-c758f8fa7a70"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400142",
+    "id": "276687f2-9e36-409d-be6a-b5655c1223e8"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"coreData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "8c90c84f-58b7-4050-8d60-50e27984ae69"
+      }, {
+        "id": "319ab2cd-3eda-4414-ae09-7f8fa07bccb2"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400142",
+    "id": "c63931bc-84ab-4713-96d4-61da5c3a9fed"
+  }, {
+    "source": {
+      "cell": "c63931bc-84ab-4713-96d4-61da5c3a9fed",
+      "port": "319ab2cd-3eda-4414-ae09-7f8fa07bccb2"
+    },
+    "target": {
+      "cell": "9d49f2fd-81b8-4c85-ae75-98e6ea37bb57",
+      "port": "eb3dba61-7a0f-466d-9301-34d3b70a3a0f"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400143",
+    "id": "8d042a7b-df64-4af7-b6e3-2f5374cdac20"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [{
+          "jsonpathMapping": "",
+          "type": "string",
+          "id": "2de1b6d7-5164-40ac-a4a5-e20b65d066c6",
+          "key": "id"
+        }, {
+          "jsonpathMapping": "",
+          "type": "string",
+          "id": "27cb4568-4278-4740-a2b4-6ed63c12ba61",
+          "key": "name"
+        }],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "76aabc97-193e-456a-b852-6075e15cd82e"
+      }, {
+        "id": "973189ec-d5c0-4352-ba7e-8a426c0311ff"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400143",
+    "id": "67d4deff-3756-4858-b199-ad42efae827e"
+  }, {
+    "source": {
+      "cell": "67d4deff-3756-4858-b199-ad42efae827e",
+      "port": "973189ec-d5c0-4352-ba7e-8a426c0311ff"
+    },
+    "target": {
+      "cell": "598d12dc-2b1c-41f3-aee2-0a42b706e261",
+      "port": "6d48a67c-a408-4c47-8f1f-fc5e9b709a18"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400143",
+    "id": "6d482238-a220-4ed3-aabb-e72ee3d93b48"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [{
+          "jsonpathMapping": "",
+          "type": "string",
+          "id": "2de1b6d7-5164-40ac-a4a5-e20b65d066c6",
+          "key": "id"
+        }, {
+          "jsonpathMapping": "",
+          "type": "string",
+          "id": "27cb4568-4278-4740-a2b4-6ed63c12ba61",
+          "key": "name"
+        }],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "aa7cbdc5-77bd-4395-90d8-bdfd6f6f7c78"
+      }, {
+        "id": "e3af0232-3764-4336-9c4c-2293dcc2abfc"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400143",
+    "id": "f9b6d1ae-65e1-4af9-a486-d9f2b203e627"
+  }, {
+    "source": {
+      "cell": "f9b6d1ae-65e1-4af9-a486-d9f2b203e627",
+      "port": "e3af0232-3764-4336-9c4c-2293dcc2abfc"
+    },
+    "target": {
+      "cell": "0d88800b-5adb-444b-b915-af8e11ef754e",
+      "port": "b005831f-38a5-4a53-ab80-e65b53814d80"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400143",
+    "id": "99a65823-999a-4b76-919e-2134a5b408e8"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{}}",
+        "reqBodyForm": [{
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "5b776ea5-1805-4367-b7dd-e29b367f5a08",
+          "key": "where"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "ab300584-d02f-4672-8bd3-e15e3e11dd8d",
+          "key": "geometry"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "3fa3f958-6d42-47ec-b7d3-9993d97f2bd2",
+          "key": "geometryType"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "43125521-f668-49a4-afc7-b6cb3cf85f2f",
+          "key": "inSR"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "74cb7ce5-db63-4249-afef-6edf0637d07a",
+          "key": "spatialRel"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "d6626fd0-4aa4-4b5b-bc07-f288bad63054",
+          "key": "outFields"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "e28d756b-8dd7-44da-a4b2-f8f5cd86132d",
+          "key": "returnGeometry"
+        }, {
+          "jsonpathMapping": "",
+          "type": "text",
+          "id": "9d3a4184-4efd-4e1c-839a-c86f5c47fe71",
+          "key": "outSR"
+        }],
+        "reqBodyType": "form"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "617cb8b6-defe-4be9-b47d-b7458b8582f9"
+      }, {
+        "id": "12294dad-217f-47da-8b2a-6c29047b73af"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400143",
+    "id": "2b992cf2-4e80-42ee-9630-4f9b3f624276"
+  }, {
+    "source": {
+      "cell": "2b992cf2-4e80-42ee-9630-4f9b3f624276",
+      "port": "12294dad-217f-47da-8b2a-6c29047b73af"
+    },
+    "target": {
+      "cell": "fa38eea8-9b75-4813-ae53-6894a13b317f",
+      "port": "47136728-4baa-47ae-a070-487570a0a8ab"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400144",
+    "id": "9b618fd0-c6f1-4cf1-a031-780bdcaff021"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"coreData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "813b5e00-8a18-40d3-bfe5-c4ba87ea8336"
+      }, {
+        "id": "6056b234-2e9e-4e3c-bb2a-ada370287f61"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400144",
+    "id": "f61c18e2-df70-4f3d-8f2b-ee7b777f8631"
+  }, {
+    "source": {
+      "cell": "f61c18e2-df70-4f3d-8f2b-ee7b777f8631",
+      "port": "6056b234-2e9e-4e3c-bb2a-ada370287f61"
+    },
+    "target": {
+      "cell": "d296057e-b30c-4209-aa7c-67e6ad743893",
+      "port": "1b8fa4cf-75c3-424f-8042-e5445c71458e"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400144",
+    "id": "08dc95e4-a890-4dc0-964a-45c082a33469"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"boData\":{\"type\":\"object\"},\"spaceData\":{\"type\":\"object\"}}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "2cee1e01-3b1c-42b0-b133-3dcf9c58face"
+      }, {
+        "id": "da88a9cc-4262-41c6-854b-6472bb704b3a"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400144",
+    "id": "1541bf27-5bf8-47c2-86ec-6349c03cd050"
+  }, {
+    "source": {
+      "cell": "1541bf27-5bf8-47c2-86ec-6349c03cd050",
+      "port": "da88a9cc-4262-41c6-854b-6472bb704b3a"
+    },
+    "target": {
+      "cell": "ab5178c6-e44c-4112-8fdd-58eef07e815f",
+      "port": "77daeb4f-36c4-4112-a5a6-c72a7dff9d15"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400144",
+    "id": "558c546b-6b11-463a-a61e-8b84cf89510e"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"inSR\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"outFields\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"where\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"geometry\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"returnGeometry\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"spatialRel\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"geometryType\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"outSR\":{\"jsonpathMapping\":\"\",\"type\":\"string\"}}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "e39b2f2a-61c9-458f-a298-84333c754127"
+      }, {
+        "id": "08d849cc-4bb2-4e11-9f76-86ee3f389292"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400144",
+    "id": "d30070e3-7f72-4aa2-b20a-fc361f3c2d0f"
+  }, {
+    "source": {
+      "cell": "d30070e3-7f72-4aa2-b20a-fc361f3c2d0f",
+      "port": "08d849cc-4bb2-4e11-9f76-86ee3f389292"
+    },
+    "target": {
+      "cell": "1c364543-5daf-4944-95a8-44344da95052",
+      "port": "ef149b2c-6aba-46bf-9368-64b6e20ed874"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400144",
+    "id": "df962ab2-2fee-4f32-b55e-f3e83c0b4901"
+  }, {
+    "data": {
+      "childInputs": {
+        "reqHeaders": [],
+        "reqQuery": [],
+        "reqBodyOther": "{\"type\":\"object\",\"properties\":{\"inSR\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"outFields\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"where\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"geometry\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"returnGeometry\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"spatialRel\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"geometryType\":{\"jsonpathMapping\":\"\",\"type\":\"string\"},\"outSR\":{\"jsonpathMapping\":\"\",\"type\":\"string\"}}}",
+        "reqBodyForm": [],
+        "reqBodyType": "json"
+      }
+    },
+    "ports": {
+      "items": [{
+        "id": "e5bba77e-b4cc-4620-b13e-5bae8e29db81"
+      }, {
+        "id": "8b3b9c81-d8e8-428b-b23b-a26b26d6c1ff"
+      }]
+    },
+    "cellType": "node_inner_datamap",
+    "name": "数据映射1649329400145",
+    "id": "c01a3eea-6330-4185-8208-6406a308eb08"
+  }, {
+    "source": {
+      "cell": "c01a3eea-6330-4185-8208-6406a308eb08",
+      "port": "8b3b9c81-d8e8-428b-b23b-a26b26d6c1ff"
+    },
+    "target": {
+      "cell": "d2b8310e-4769-4e89-a071-4715b19b8370",
+      "port": "a10cd6d4-7dd4-4eab-b260-dd81eb58ec7e"
+    },
+    "cellType": "edge_common",
+    "name": "普通线1649329400145",
+    "id": "38273440-c036-4864-a776-dc596dccac5a"
+  }]
+}
