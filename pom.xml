@@ -5,17 +5,22 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.hrh</groupId>
-    <artifactId>dagproject</artifactId>
+    <artifactId>service-arrange</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+    <name>service-arrange</name>
     <description>
-        dag json 调度的项目：
-        服务编排（http调度）；
-        dag调度（http、py、sql、spark、shell、yarn插件化调度算子包）；
-        算子包插件；
+        服务编排平台（Service Arrangement）：
+        基于 DSL 的可视化服务编排引擎，将分散的服务通过可视化编排的 JSON（DSL）串成可执行流程，
+        提供 DSL 解析、任务调度执行、实例状态与日志记录、失败补偿、循环与条件分支能力。
+
+        模块划分：
+            backend/engine：核心引擎，包含 DSL 解析、任务调度、算子执行与持久化；
+            backend/web   ：Web 接入层，提供 REST 接口与启动类；
+            frontend      ：可视化编排控制台（纯静态，零依赖）。
     </description>
     <modules>
-        <module>servicearrange</module>
+        <module>backend</module>
     </modules>
 
     <properties>

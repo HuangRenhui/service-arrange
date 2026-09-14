@@ -1,8 +1,8 @@
 ﻿# REST 接口说明
 
-本文档列出 `main` 模块暴露的全部 HTTP 接口。
+本文档列出 `web` 模块暴露的全部 HTTP 接口。
 
-> 代码依据：`main/src/main/java/com/hrh/servicearrange/controller/*`（已逐行核对）。
+> 代码依据：`backend/web/src/main/java/com/hrh/servicearrange/controller/*`（已逐行核对）。
 > 部署信息：端口 `8082`，上下文路径 `/servicearrange`（见 `application.yml`）。
 
 ---

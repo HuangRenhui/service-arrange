@@ -2,7 +2,7 @@
 
 本文档描述服务编排引擎的领域专用语言（DSL）。前端画布产出的 JSON、后端 `DslParser` 解析的对象、以及运行时落库的 `Inst`，都以本规范为唯一契约。
 
-> 代码依据：`servicearrangeImpl/src/main/java/com/hrh/servicearrange/dsl/*`、`parser/annotation/CellType.java`。
+> 代码依据：`backend/engine/src/main/java/com/hrh/servicearrange/dsl/*`、`parser/annotation/CellType.java`。
 
 ---
 
