@@ -1,0 +1,201 @@
+{
+    "cells": [
+        {
+            "name": "开始",
+            "cellType": "node_start",
+            "id": "2d557d74-09ee-447b-bd4a-1e7b92da7202",
+            "data": {
+                "inputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}",
+                "globals": [
+                    {
+                        "name": "类别",
+                        "key": "wftype",
+                        "type": "int",
+                        "value": 1
+                    },
+                    {
+                        "name": "分组",
+                        "key": "gpid",
+                        "type": "string",
+                        "value": "igis"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "数据映射1",
+            "cellType": "node_inner_datamap",
+            "id": "a8e09b42-3ea0-43bf-9971-c26f94f15bd5",
+            "data": {
+                "parentsOutputs": [
+                    {
+                        "contentType": "application/json",
+                        "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}"
+                    }
+                ],
+                "childInputs": {
+                    "reqPath": null,
+                    "reqQuery": null,
+                    "reqHeaders": [{
+                        "name": "1",
+                        "key": "X-AUTH-ID",
+                        "type": "string",
+                        "jsonpathMapping": "#header_$X-AToken"
+                    },{
+                        "name": "2",
+                        "key": "falseTag",
+                        "type": "boolean",
+                        "jsonpathMapping": "#header_$falseTag"
+                    }],
+                    "reqBodyForm": null,
+                    "reqBodyJson": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\",\"jsonpathMapping\":\"\"},\"name\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$name\"},\"wftype\":{\"type\":\"number\",\"jsonpathMapping\":\"#start$wftype\"},\"gpid\":{\"type\":\"string\",\"jsonpathMapping\":\"#start$gpid\"},\"comment\":{\"type\":\"string\",\"jsonpathMapping\":\"\"}}}"
+                }
+            },
+            "ports": {
+                "items": [
+                    {
+                        "id": "d23e8be8-d831-43c4-9452-bad026ea5307"
+                    },
+                    {
+                        "id": "e671e30e-1d54-4f6e-a725-83409dc4d6af"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "e1-pt",
+            "cellType": "edge_common",
+            "id": "0a8ea960-16a6-4cd8-90a3-8d7b67c45ca1",
+            "source": {
+                "cell": "a8e09b42-3ea0-43bf-9971-c26f94f15bd5",
+                "port": "e671e30e-1d54-4f6e-a725-83409dc4d6af"
+            },
+            "target": {
+                "cell": "500be83a-9818-4bf7-b373-b4569a4f49f8",
+                "port": "2463fc4b-f336-4b25-a1fe-f772d0f27fe6"
+            }
+        },
+        {
+            "name": "http1",
+            "cellType": "node_outer_http",
+            "id": "500be83a-9818-4bf7-b373-b4569a4f49f8",
+            "groupIds": [
+                "fhc4c6c8-8ca5-413d-bda2-1352b1f90dca"
+            ],
+            "data": {
+                "protocol": "http",
+                "url": "http://192.168.10.126:9400/ispatial-dag/compute/workflow",
+                "requestType": "POST",
+                "outputs": {
+                    "contentType": "application/json",
+                    "outputsJsonSchema": "{\"type\":\"object\",\"properties\":{\"errno\":{\"type\":\"number\"},\"errmsg\":{\"type\":\"string\"},\"data\":{\"type\":\"number\"}}}"
+                },
+                "inputs": {
+                    "reqPath": null,
+                    "reqQuery": null,
+                    "reqHeaders":  [{
+                        "name": "1",
+                        "key": "X-AUTH-ID",
+                        "type": "string"
+                    },{
+                        "name": "2",
+                        "key": "falseTag",
+                        "type": "boolean"
+                    }],
+                    "reqBodyForm": null,
+                    "bodyJsonSchema": "{\"type\":\"object\",\"properties\":{\"projectCode\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"wftype\":{\"type\":\"number\"},\"gpid\":{\"type\":\"string\"},\"comment\":{\"type\":\"string\"}}}"
+                }
+            },
+            "ports": {
+                "items": [
+                    {
+                        "id": "2463fc4b-f336-4b25-a1fe-f772d0f27fe6"
+                    },
+                    {
+                        "id": "fbe1c745-2233-401b-9c5b-dcddbab2ee62"
+                    },
+                    {
+                        "id": "d3e6d35a-070f-4ab7-8f39-ce5e18f15f66"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "e2-bc",
+            "cellType": "edge_compensate",
+            "id": "e21a83c1-bdd2-4234-941e-d06b172f9222",
+            "source": {
+                "cell": "500be83a-9818-4bf7-b373-b4569a4f49f8",
+                "port": "d3e6d35a-070f-4ab7-8f39-ce5e18f15f66"
+            },
+            "target": {
+                "cell": "a34b6e6b-e639-4c75-9be6-e89e1cb843c2",
+                "port": "a7b94877-e5ed-45d4-a1b8-71767444f255"
+            }
+        },
+        {
+            "name": "补偿数据映射1",
+            "cellType": "node_inner_compensateDatamap",
+            "id": "a34b6e6b-e639-4c75-9be6-e89e1cb843c2",
+            "data": {
+                "token":"",
+            },
+            "ports": {
+                "items": [
+                    {
+                        "id": "a7b94877-e5ed-45d4-a1b8-71767444f255"
+                    },
+                    {
+                        "id": "9e2cb661-5863-4a7f-95cc-471ffed63283"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "e3-pt",
+            "cellType": "edge_common",
+            "id": "1bfe0c0e-152c-478b-8895-f083d1210d1e",
+            "source": {
+                "cell": "a34b6e6b-e639-4c75-9be6-e89e1cb843c2",
+                "port": "9e2cb661-5863-4a7f-95cc-471ffed63283"
+            },
+            "target": {
+                "cell": "e3fc4bde-a9e7-4ea4-aaff-d8b3d5418686",
+                "port": "55d98b0c-b1da-4fb6-98c6-0cdd0363e45c"
+            }
+        },
+        {
+            "name": "http补偿1",
+            "cellType": "node_outer_httpCompensate",
+            "id": "e3fc4bde-a9e7-4ea4-aaff-d8b3d5418686",
+            "data": {
+                "protocol": "http",
+                "url": "http://192.168.10.126:9400/ispatial-dag/compute/workflow",
+                "token":null
+            },
+            "ports": {
+                "items": [
+                    {
+                        "id": "55d98b0c-b1da-4fb6-98c6-0cdd0363e45c"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "结束",
+            "cellType": "node_end",
+            "id": "f424c6c8-8ca5-413d-bda2-1352b1f90dca",
+            "data": {
+                "contentType": "application/json",
+                "outputsJsonSchema": "#jsonschema的json串"
+            }
+        }
+    ],
+    "groups": [
+        {
+            "id": "fhc4c6c8-8ca5-413d-bda2-1352b1f90dca",
+            "name": "补偿强组合1",
+            "type": "group_compensate"
+        }
+    ]
+}

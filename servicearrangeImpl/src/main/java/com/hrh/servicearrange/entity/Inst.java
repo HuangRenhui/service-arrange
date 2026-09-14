@@ -1,5 +1,6 @@
 package com.hrh.servicearrange.entity;
 
+import com.hrh.servicearrange.dsl.Cell;
 import com.hrh.servicearrange.dsl.Group;
 import com.hrh.servicearrange.dsl.KeyValueDto;
 import org.springframework.data.annotation.Transient;
