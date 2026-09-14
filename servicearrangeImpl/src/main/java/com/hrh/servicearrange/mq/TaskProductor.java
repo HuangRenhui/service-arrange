@@ -44,15 +44,16 @@ public class TaskProductor {
     }
 
     public void sendTaskRun(Task task) {
-        InstLog instLog = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),InstLog.LEVEL_INFO);
-        Task4MQ  task4MQ = new Task4MQ(task.getId(),task.getType());
-        taskRunConsumer.run(task4MQ,null,null);
+        InstLog instLog = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO);
+        Task4MQ task4MQ = new Task4MQ(task.getId(), task.getType());
+        taskRunConsumer.run(task4MQ, null, null);
+        instLogDao.save(instLog);
     }
 
     public void ackTask(String instId, Long deliveryTag, Channel channel, String msg) {
         try {
-            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX+instId);
-            this.ackTask(deliveryTag,channel,msg);
+            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
+            this.ackTask(deliveryTag, channel, msg);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -60,8 +61,8 @@ public class TaskProductor {
 
     public void nAckTask(String instId, Long deliveryTag, Channel channel, String msg) {
         try {
-            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX+instId);
-            this.nAckTask(deliveryTag,channel,msg);
+            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
+            this.nAckTask(deliveryTag, channel, msg);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -69,9 +70,9 @@ public class TaskProductor {
 
     public void nAckTask(Long deliveryTag, Channel channel, String msg) {
         System.out.println(msg);
-        if(channel.isOpen()){
+        if (channel.isOpen()) {
             try {
-                channel.basicNack(deliveryTag,false,true);
+                channel.basicNack(deliveryTag, false, true);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -80,9 +81,9 @@ public class TaskProductor {
 
     public void ackTask(Long deliveryTag, Channel channel, String msg) {
         System.out.println(msg);
-        if(channel.isOpen()){
+        if (channel.isOpen()) {
             try {
-                channel.basicAck(deliveryTag,false);
+                channel.basicAck(deliveryTag, false);
             } catch (IOException e) {
                 e.printStackTrace();
             }

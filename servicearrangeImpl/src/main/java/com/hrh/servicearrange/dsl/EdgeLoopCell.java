@@ -6,7 +6,7 @@ import com.hrh.servicearrange.parser.annotation.LoopType;
 
 import java.util.ArrayList;
 import java.util.List;
-
+//循环线
 public class EdgeLoopCell extends EdgeCommonCell {
 
     private String cellType = CellType.EDGE_LOOP;

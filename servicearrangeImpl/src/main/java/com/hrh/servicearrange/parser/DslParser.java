@@ -186,6 +186,7 @@ public class DslParser {
              "id": "f52ce5e3-8686-475b-842f-902de0a72898"
              }
              */
+            //全局静态参数
             globalDataCell.getData().getStaticParams().stream().forEach(map -> {
                 JSONObject obj = JSONUtil.parseObj(map);
                 KeyValueDto dto = new KeyValueDto();
@@ -199,6 +200,7 @@ public class DslParser {
                 dto.setValue(obj.getStr("default"));
                 inst.getStaticParams().add(dto);
             });
+            //全局动态参数
             globalDataCell.getData().getDynamicParams().stream().forEach(map -> {
                 JSONObject obj = JSONUtil.parseObj(map);
                 KeyValueDto dto = new KeyValueDto();
@@ -219,7 +221,7 @@ public class DslParser {
         return inst;
     }
 
-    private Set<String> getCellIdsBetweenLoopEdge(Inst inst, Cell loopCell) {
+    public static Set<String> getCellIdsBetweenLoopEdge(Inst inst, Cell loopCell) {
         //循环线的入度节点
         String source = loopCell.getSource().getCell();
         //获取入度的所有父节点
@@ -243,7 +245,7 @@ public class DslParser {
 
     private static int Chilednum = -1;
 
-    private void getChildNotInSet(Set<String> idsbetween, String target, Map<String, Set<String>> nodeChildsMap, Set<String> myParents) {
+    private static void getChildNotInSet(Set<String> idsbetween, String target, Map<String, Set<String>> nodeChildsMap, Set<String> myParents) {
         //获取入度的所有子节点
         List<String> childs = nodeChildsMap.get(target).stream().filter(i -> myParents.contains(i)).collect(Collectors.toList());
         if (childs != null && childs.size() > 0) {
@@ -260,7 +262,7 @@ public class DslParser {
     //递归标志
     private static int Parentnum = -1;
 
-    private void getMyParents(Set<String> myParents, Set<String> pids, Inst inst) {
+    private static void getMyParents(Set<String> myParents, Set<String> pids, Inst inst) {
         if (!StringUtils.isEmpty(pids)) {
             pids.stream().forEach(id -> {
                 Parentnum++;
