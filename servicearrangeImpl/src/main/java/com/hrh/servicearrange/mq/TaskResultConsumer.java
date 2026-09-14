@@ -429,6 +429,7 @@ public class TaskResultConsumer {
             taskProductor.ackTask(instId, deliveryTag, channel, "send next task success, do ack.");
         } catch (Exception e) {
             e.printStackTrace();
+            inst.setState(Inst.STATE_FAIL);
             taskProductor.nAckTask(instId, deliveryTag, channel, "before send next task fail, do nack.");
         }finally {
             System.out.println("finally..........do........inst:" + inst.getId());
