@@ -51,4 +51,9 @@ _extract.ps1
 _*.js
 _*.txt
 _*.log
+_cdp_*/
+_cdp_profile*/
 .gitmsg.tmp
+
+# 前端零依赖静态服务器的例外（供本地预览使用，需纳入版本控制）
+!frontend/serve.js
