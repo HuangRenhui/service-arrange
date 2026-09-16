@@ -23,6 +23,7 @@
     init: function () {
       this.canvas = document.getElementById('canvas');
       this.nodesLayer = document.getElementById('nodesLayer');
+      this.edgesLayer = document.getElementById('edgesLayer');
       this.edgesGroup = document.getElementById('edgesGroup');
       this.tempGroup = document.getElementById('tempEdgeGroup');
       this.propBody = document.getElementById('propBody');
@@ -32,6 +33,8 @@
       this.zoomLabel = document.getElementById('zoomLabel');
       this.emptyBox = document.getElementById('canvasEmpty');
 
+      /* 注意：DOM 引用必须在 bindXXX 之前全部就绪，
+         否则 bindCanvas 内部读不到元素会抛异常，导致后续初始化被中断。 */
       this.bindCatalog();
       this.bindCanvas();
       this.bindToolbar();
@@ -56,10 +59,15 @@
         dynamicGlobalParameters: []
       };
       this.selectedId = null;
+      this.clearSizeCache();
       document.getElementById('planIdInput').value = inst.planId || '';
       this.renderCatalog();
       this.render();
       this.renderProps();
+
+      /* 回写一次：Store 在保存时会清洗历史脏数据（如无效连线），
+         使修复结果持久化，避免每次打开都重复处理。 */
+      this.persist();
     },
 
     setModel: function (model) {
@@ -122,7 +130,9 @@
           /* 算子节点用 op:<id> 作为拖拽载荷；内置节点直接用 cellType */
           var payload = n.opId ? ('op:' + n.opId) : n.cellType;
           var code = n.opId ? (n.opType + ' · ' + n.opId.slice(0, 6)) : n.cellType;
-          html += '<div class="pitem" draggable="true" data-payload="' + esc(payload) + '" title="' + esc(n.desc) + '">'
+          html += '<div class="pitem" draggable="true" data-payload="' + esc(payload) + '"'
+            + ' data-builtin="' + (n.builtin ? 1 : 0) + '"'
+            + ' title="' + esc(n.desc) + '">'
             + '<span class="pitem-ico" style="background:' + g.meta.color + '">' + esc(n.icon) + '</span>'
             + '<span class="pitem-text">'
             + '<span class="pitem-name">' + esc(n.name) + '</span>'
@@ -230,16 +240,62 @@
       window.addEventListener('mouseup', function (e) {
         if (self._panning) { self._panning = null; return; }
         if (self._drag) {
+          var dragged = self.getCell(self._drag.id);
           self._drag = null;
           var el = self.nodesLayer.querySelector('.node.dragging');
           if (el) el.classList.remove('dragging');
+          /* 松手时吸附到网格，并同步 DOM 位置 */
+          if (dragged) {
+            self.snapNode(dragged);
+            var del = self.nodesLayer.querySelector('.node[data-id="' + dragged.id + '"]');
+            if (del) { del.style.left = dragged.x + 'px'; del.style.top = dragged.y + 'px'; }
+            self.renderEdges();
+          }
           self.persist();
           return;
         }
         if (self._linking) self.onLinkEnd(e);
       });
 
-      this.canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+      /* 窗口失焦 / ESC：中断连线手势，避免临时预览线残留 */
+      window.addEventListener('blur', function () { self.cancelLink(); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' || e.keyCode === 27) { self.cancelLink(); self.hideCtxMenu(); }
+      });
+
+      /* 右键：命中节点/连线则弹出上下文菜单，否则仅屏蔽默认菜单 */
+      this.canvas.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        var hit = self.hitTest(e.target);
+        if (!hit) { self.hideCtxMenu(); return; }
+        self.select(hit.id);
+        self.showCtxMenu(e.clientX, e.clientY, hit);
+      });
+
+      /* 双击节点：打开编辑（聚焦属性面板的名称输入框） */
+      this.nodesLayer.addEventListener('dblclick', function (e) {
+        var nodeEl = e.target.closest && e.target.closest('.node');
+        if (!nodeEl) return;
+        e.preventDefault();
+        self.select(nodeEl.dataset.id);
+        self.focusPropEditor();
+      });
+
+      /* 双击连线：选中并聚焦其属性编辑 */
+      this.edgesLayer.addEventListener('dblclick', function (e) {
+        var hit = self.hitTest(e.target);
+        if (!hit || hit.kind !== 'edge') return;
+        e.preventDefault();
+        self.select(hit.id);
+        self.focusPropEditor();
+      });
+
+      /* 点击任意处关闭右键菜单 */
+      document.addEventListener('mousedown', function (e) {
+        if (!e.target.closest || !e.target.closest('#ctxMenu')) self.hideCtxMenu();
+      });
+      window.addEventListener('blur', function () { self.hideCtxMenu(); });
+      this.canvas.addEventListener('wheel', function () { self.hideCtxMenu(); }, { passive: true });
 
       this.canvas.addEventListener('wheel', function (e) {
         if (!e.ctrlKey && !e.metaKey) return;
@@ -302,20 +358,36 @@
     },
 
     fit: function () {
+      var self = this;
       var nodes = this.getNodes();
       if (!nodes.length) { this.pan = { x: 0, y: 0 }; this.setScale(1); return; }
+
+      /* 用实测尺寸包围盒，避免估值偏大导致缩放过小 */
       var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       nodes.forEach(function (n) {
-        minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
-        maxX = Math.max(maxX, n.x + 200); maxY = Math.max(maxY, n.y + 100);
+        if (!isFinite(n.x)) n.x = 0;
+        if (!isFinite(n.y)) n.y = 0;
+        var sz = self.nodeSize(n.id);
+        minX = Math.min(minX, n.x);
+        minY = Math.min(minY, n.y);
+        maxX = Math.max(maxX, n.x + sz.w);
+        maxY = Math.max(maxY, n.y + sz.h);
       });
+
       var rect = this.canvas.getBoundingClientRect();
-      var pad = 70;
-      var sx = (rect.width - pad * 2) / (maxX - minX);
-      var sy = (rect.height - pad * 2) / (maxY - minY);
-      this.scale = Math.max(0.3, Math.min(1.15, Math.min(sx, sy)));
-      this.pan = { x: pad - minX * this.scale, y: pad - minY * this.scale };
+      var pad = 64;
+      var spanX = Math.max(maxX - minX, 1);
+      var spanY = Math.max(maxY - minY, 1);
+      var sx = (rect.width - pad * 2) / spanX;
+      var sy = (rect.height - pad * 2) / spanY;
+      if (!isFinite(sx) || !isFinite(sy)) { this.pan = { x: 0, y: 0 }; this.setScale(1); return; }
+      this.scale = Math.max(0.4, Math.min(1, Math.min(sx, sy)));
+      this.pan = {
+        x: pad - minX * this.scale + (rect.width - pad * 2 - spanX * this.scale) / 2,
+        y: pad - minY * this.scale + (rect.height - pad * 2 - spanY * this.scale) / 2
+      };
       this.applyTransform();
+      this.clearSizeCache();
       this.renderEdges();
       this.zoomLabel.textContent = Math.round(this.scale * 100) + '%';
     },
@@ -326,11 +398,13 @@
       var id = Store.uid();
       var data = def.defaultData();
 
-      /* 算子节点：绑定具体的算子 */
+      /* 算子节点：绑定具体的算子。
+         注意：算子引用必须放在 cell.data 下（与后端 DSL 及 nodePresentation
+         的读取路径一致），否则节点会渲染成「未绑定算子」。 */
       var name = def.name;
-      if (cellType === NodeDefs.OP_CELLTYPE && opId) {
-        var op = Store.getOperator(opId);
-        data = { opId: opId, opType: op ? op.opType : 'http' };
+      if (cellType === NodeDefs.OP_CELLTYPE) {
+        var op = opId ? Store.getOperator(opId) : null;
+        data = { opId: opId || '', opType: (op && op.opType) || 'http' };
         name = op ? op.name : '未绑定算子';
       }
 
@@ -341,11 +415,63 @@
         x: x, y: y,
         ports: { items: [{ id: id + '_out' }, { id: id + '_in' }] }
       });
+
+      /* 普通节点的业务字段平铺在 cell 上；算子节点的引用统一收敛到 data 下 */
+      if (cellType === NodeDefs.OP_CELLTYPE) {
+        cell.data = { opId: data.opId, opType: data.opType };
+        delete cell.opId;
+        delete cell.opType;
+      }
+
+      /* 网格吸附 + 避让已有节点，避免重叠堆在一起 */
+      this.snapNode(cell);
+      this.avoidOverlap(cell);
+
       this.model.cells.push(cell);
       this.persist();
       this.render();
       this.select(id);
       return cell;
+    },
+
+    /**
+     * 若新节点与已有节点重叠，则向下（或向右）顺移至空位。
+     * 采用简单的环形探测：每次下移一个行距，最多尝试 20 次。
+     */
+    avoidOverlap: function (cell) {
+      var self = this;
+      var others = this.getNodes().filter(function (n) { return n.id !== cell.id; });
+      if (!others.length) return;
+
+      var size = { w: 168, h: 76 };
+      var GAP_X = 40, GAP_Y = 28;
+
+      function overlaps(ax, ay) {
+        return others.some(function (o) {
+          var os = self.nodeSize(o.id);
+          var ow = os.provisional ? size.w : os.w;
+          var oh = os.provisional ? size.h : os.h;
+          return !(ax + size.w + GAP_X <= o.x ||
+                   o.x + ow + GAP_X <= ax ||
+                   ay + size.h + GAP_Y <= o.y ||
+                   o.y + oh + GAP_Y <= ay);
+        });
+      }
+
+      var tryY = cell.y;
+      var guard = 0;
+      while (overlaps(cell.x, tryY) && guard++ < 20) {
+        tryY += size.h + GAP_Y;
+      }
+      if (guard >= 20) {
+        /* 下方排满则向右另起一列 */
+        cell.x += size.w + GAP_X * 2;
+        cell.y = 90;
+        this.snapNode(cell);
+        return;
+      }
+      cell.y = tryY;
+      this.snapNode(cell);
     },
 
     addEdge: function (sourceId, sourcePort, targetId, targetPort, cellType) {
@@ -408,6 +534,182 @@
       this.renderEdges();
     },
 
+    /* ---------- 命中测试 ---------- */
+    /**
+     * 判断鼠标位置命中了哪个画布元素。
+     * @returns {{id, kind:'node'|'edge', cell}|null}
+     */
+    hitTest: function (targetEl) {
+      if (!targetEl || !targetEl.closest) return null;
+
+      var nodeEl = targetEl.closest('.node');
+      if (nodeEl) {
+        var cell = this.getCell(nodeEl.dataset.id);
+        return cell ? { id: cell.id, kind: 'node', cell: cell } : null;
+      }
+      var edgeEl = targetEl.closest('.edge-hit');
+      if (edgeEl) {
+        var eid = edgeEl.getAttribute('data-id');
+        var ec = eid ? this.getCell(eid) : null;
+        return ec ? { id: ec.id, kind: 'edge', cell: ec } : null;
+      }
+      return null;
+    },
+
+    /* ---------- 右键菜单 ---------- */
+    showCtxMenu: function (clientX, clientY, hit) {
+      var self = this;
+      var menu = document.getElementById('ctxMenu');
+      var cell = hit.cell;
+      var items = [];
+
+      if (hit.kind === 'node') {
+        items.push({ label: '编辑', icon: '✎', act: 'edit' });
+        items.push({ label: '重命名', icon: 'T', act: 'rename' });
+        items.push({ sep: true });
+        items.push({ label: '复制节点', icon: '⧉', act: 'duplicate' });
+        if (cell.cellType !== 'node_start' && cell.cellType !== 'node_end') {
+          items.push({ label: '加入补偿组', icon: '⟲', act: 'group' });
+        }
+        items.push({ sep: true });
+        items.push({ label: '删除节点', icon: '✕', act: 'delete', danger: true });
+      } else {
+        items.push({ label: '编辑线属性', icon: '✎', act: 'edit' });
+        items.push({ sep: true });
+        items.push({ label: '置为普通线', icon: '→', act: 'type:edge_common' });
+        items.push({ label: '置为决策线', icon: '◇', act: 'type:edge_decision' });
+        items.push({ label: '置为循环线', icon: '↻', act: 'type:edge_loop' });
+        items.push({ label: '置为补偿线', icon: '⟲', act: 'type:edge_compensate' });
+        items.push({ sep: true });
+        items.push({ label: '反向连线', icon: '⇄', act: 'reverse' });
+        items.push({ label: '删除连线', icon: '✕', act: 'delete', danger: true });
+      }
+
+      menu.innerHTML = items.map(function (it) {
+        if (it.sep) return '<div class="ctx-sep"></div>';
+        return '<button class="ctx-item' + (it.danger ? ' danger' : '') + '" data-act="' + it.act + '">'
+          + '<span class="ctx-ico">' + it.icon + '</span>'
+          + '<span>' + esc(it.label) + '</span>'
+          + '</button>';
+      }).join('');
+
+      /* 先显示以获取尺寸，再修正边界位置 */
+      menu.classList.add('open');
+      var mw = menu.offsetWidth;
+      var mh = menu.offsetHeight;
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+      var x = clientX;
+      var y = clientY;
+      if (x + mw > vw - 8) x = vw - mw - 8;
+      if (y + mh > vh - 8) y = vh - mh - 8;
+      menu.style.left = Math.max(8, x) + 'px';
+      menu.style.top = Math.max(8, y) + 'px';
+
+      menu.querySelectorAll('[data-act]').forEach(function (btn) {
+        btn.onclick = function () {
+          var act = btn.dataset.act;
+          self.hideCtxMenu();
+          self.handleCtxAction(act, hit);
+        };
+      });
+    },
+
+    hideCtxMenu: function () {
+      var menu = document.getElementById('ctxMenu');
+      if (menu) menu.classList.remove('open');
+    },
+
+    handleCtxAction: function (act, hit) {
+      var self = this;
+      var cell = hit.cell;
+
+      /* 线型切换 */
+      if (act.indexOf('type:') === 0) {
+        var newType = act.slice(5);
+        cell.cellType = newType;
+        cell.name = NodeDefs.get(newType).name;
+        cell.data = NodeDefs.get(newType).defaultData();
+        this.persist();
+        this.render();
+        this.select(cell.id);
+        UI.toast('已切换为「' + NodeDefs.get(newType).name + '」', 'ok');
+        return;
+      }
+
+      switch (act) {
+        case 'edit':
+          this.select(cell.id);
+          this.focusPropEditor();
+          break;
+        case 'rename':
+          this.select(cell.id);
+          UI.modal('重命名', cell.name || '', {
+            okText: '确定',
+            onOk: function (val) {
+              var v = (val || '').trim();
+              if (!v) { UI.toast('名称不能为空', 'warn'); return false; }
+              cell.name = v;
+              self.persist();
+              self.clearSizeCache(cell.id);
+              self.render();
+              self.renderProps();
+              UI.toast('已重命名', 'ok');
+            }
+          });
+          break;
+        case 'duplicate':
+          this.duplicateNode(cell);
+          break;
+        case 'group':
+          this.joinGroup(cell);
+          break;
+        case 'reverse':
+          var s = cell.source;
+          cell.source = cell.target;
+          cell.target = s;
+          this.persist();
+          this.render();
+          this.select(cell.id);
+          UI.toast('已反向', 'ok');
+          break;
+        case 'delete':
+          this.removeCell(cell.id);
+          break;
+      }
+    },
+
+    /** 复制节点（连线不复制） */
+    duplicateNode: function (cell) {
+      var copy = JSON.parse(JSON.stringify(cell));
+      copy.id = Store.uid();
+      copy.name = (cell.name || '') + ' 副本';
+      copy.x = cell.x + 30;
+      copy.y = cell.y + 30;
+      copy.ports = { items: [{ id: copy.id + '_out' }, { id: copy.id + '_in' }] };
+      if (copy.groupIds) delete copy.groupIds;
+
+      this.snapNode(copy);
+      this.avoidOverlap(copy);
+      this.model.cells.push(copy);
+      this.persist();
+      this.render();
+      this.select(copy.id);
+      UI.toast('已复制节点', 'ok');
+    },
+
+    /** 选中元素后把焦点移到属性面板，便于直接编辑 */
+    focusPropEditor: function () {
+      var body = this.propBody;
+      var first = body.querySelector('input[data-bind="name"]')
+        || body.querySelector('input[type=text]:not([readonly])')
+        || body.querySelector('textarea');
+      if (first) {
+        first.focus();
+        if (first.select) { try { first.select(); } catch (e) {} }
+      }
+    },
+
     /* ---------- 选中 ---------- */
     select: function (id) {
       this.selectedId = id;
@@ -418,11 +720,33 @@
     },
 
     /* ---------- 渲染 ---------- */
+    /**
+     * 渲染时序：
+     *   1. 先渲染节点（DOM 插入）
+     *   2. 等一帧让浏览器完成布局，此时 offsetWidth/offsetHeight 才有值
+     *   3. 再渲染连线（依赖真实尺寸计算端点）
+     * 若在第 2 步之前渲染连线，会因读不到尺寸而用估值，导致连线错位。
+     */
     render: function () {
+      /* 任何重绘都意味着当前的连线手势作废，先清掉临时预览线，
+         否则被中断的拖拽会在画布上留下一条永远不消失的虚线。 */
+      this.clearTempEdge();
       this.renderNodes();
-      this.renderEdges();
       this.applyTransform();
       this.updateStatus();
+
+      /* 强制同步布局后再画线：读取一次 offsetHeight 触发 reflow */
+      void this.nodesLayer.offsetHeight;
+      this.clearSizeCache();
+      this.renderEdges();
+
+      /* 下一帧再画一次，兜底处理字体/图标异步加载导致的尺寸变化 */
+      var self = this;
+      if (this._rafId) cancelAnimationFrame(this._rafId);
+      this._rafId = requestAnimationFrame(function () {
+        self.clearSizeCache();
+        self.renderEdges();
+      });
     },
 
     renderNodes: function () {
@@ -431,6 +755,9 @@
       var html = nodes.map(function (n) {
         var ps = self.nodePresentation(n);
         var sel = n.id === self.selectedId ? ' selected' : '';
+        /* 坐标兜底：历史数据可能缺 x/y，直接拼进 style 会得到 "undefinedpx" */
+        if (!isFinite(n.x)) n.x = 0;
+        if (!isFinite(n.y)) n.y = 0;
         return '<div class="node' + sel + '" data-id="' + n.id + '" '
           + 'style="left:' + n.x + 'px;top:' + n.y + 'px">'
           + '<div class="node-accent" style="background:' + ps.color + '"></div>'
@@ -449,14 +776,28 @@
 
       if (this.emptyBox) this.emptyBox.classList.toggle('show', nodes.length === 0);
 
+      /* 上一帧标记为拖拽中的节点，重建 DOM 后补回 dragging 类 */
+      if (this._drag) {
+        var dragEl = this.nodesLayer.querySelector('.node[data-id="' + this._drag.id + '"]');
+        if (dragEl) dragEl.classList.add('dragging');
+      }
+
       this.nodesLayer.querySelectorAll('.node').forEach(function (el) {
         el.addEventListener('mousedown', function (e) {
           if (e.target.classList.contains('node-port')) return;
           var id = el.dataset.id;
-          self.select(id);
           var cell = self.getCell(id);
-          el.classList.add('dragging');
+          if (!cell) return;
+
+          /* 先记录拖拽态，再 select()。
+             select() 内部会 renderNodes() 重建整个节点层，
+             因此不能在 select() 之后对旧元素加 class —— 那会作用到已被丢弃的节点上。 */
           self._drag = { id: id, sx: e.clientX, sy: e.clientY, ox: cell.x, oy: cell.y };
+          self.select(id);
+
+          var fresh = self.nodesLayer.querySelector('.node[data-id="' + id + '"]');
+          if (fresh) fresh.classList.add('dragging');
+
           e.preventDefault();
         });
       });
@@ -509,8 +850,10 @@
           badges.push('<span class="nbadge">' + esc((op.method || 'GET')) + '</span>');
         } else if (op.opType === 'sql') {
           badges.push('<span class="nbadge op">' + esc(shortDb(op.database)) + '</span>');
-        } else {
+        } else if (op.opType === 'shell' || op.opType === 'execShell') {
           badges.push('<span class="nbadge op">' + esc(shortDb(op.env)) + '</span>');
+        } else if (op.builtin) {
+          badges.push('<span class="nbadge inner">内置</span>');
         }
       } else if (isOp) {
         badges.push('<span class="nbadge warn">算子缺失</span>');
@@ -534,11 +877,23 @@
       var d = this._drag;
       var cell = this.getCell(d.id);
       if (!cell) return;
-      cell.x = Math.round(d.ox + (e.clientX - d.sx) / this.scale);
-      cell.y = Math.round(d.oy + (e.clientY - d.sy) / this.scale);
+      var scale = isFinite(this.scale) && this.scale > 0 ? this.scale : 1;
+      var ox = isFinite(d.ox) ? d.ox : 0;
+      var oy = isFinite(d.oy) ? d.oy : 0;
+      cell.x = Math.round(ox + (e.clientX - d.sx) / scale);
+      cell.y = Math.round(oy + (e.clientY - d.sy) / scale);
       var el = this.nodesLayer.querySelector('.node[data-id="' + d.id + '"]');
       if (el) { el.style.left = cell.x + 'px'; el.style.top = cell.y + 'px'; }
+      /* 位置变化不影响尺寸缓存，直接重画连线即可 */
       this.renderEdges();
+    },
+
+    /** 拖动结束时把坐标吸附到 10px 网格，保持画面整齐 */
+    snapNode: function (cell) {
+      if (!isFinite(cell.x)) cell.x = 0;
+      if (!isFinite(cell.y)) cell.y = 0;
+      cell.x = Math.round(cell.x / 10) * 10;
+      cell.y = Math.round(cell.y / 10) * 10;
     },
 
     onLinking: function (e) {
@@ -597,7 +952,13 @@
         var hit = document.createElementNS(ns, 'path');
         hit.setAttribute('d', d);
         hit.setAttribute('class', 'edge-hit');
-        hit.addEventListener('mousedown', function (e) { e.stopPropagation(); self.select(edge.id); });
+        hit.setAttribute('data-id', edge.id);   /* 供右键菜单与命中测试定位 */
+        hit.addEventListener('mousedown', function (e) {
+          /* 右键交给 contextmenu 处理，避免选中后被立即清空 */
+          if (e.button === 2) return;
+          e.stopPropagation();
+          self.select(edge.id);
+        });
         svg.appendChild(hit);
 
         var path = document.createElementNS(ns, 'path');
@@ -632,19 +993,62 @@
       return '';
     },
 
+    /**
+     * 计算桩点中心坐标。
+     *
+     * 关键：节点尺寸必须实测（offsetWidth/offsetHeight），不能依赖硬编码估值，
+     *      否则节点高度随徽标数量变化时连线会飘出节点外。
+     *      测量结果缓存在 _sizeCache 中，避免同一帧内反复触发布局计算。
+     */
     portCenter: function (nodeId, isOut) {
       var cell = this.getCell(nodeId);
       if (!cell) return null;
-      var w = 156, h = NODE_H_EST;
-      var el = this.nodesLayer.querySelector('.node[data-id="' + nodeId + '"]');
-      if (el) { w = el.offsetWidth || w; h = el.offsetHeight || h; }
-      return { x: cell.x + (isOut ? w : 0), y: cell.y + h / 2 };
+
+      var size = this.nodeSize(nodeId);
+      return {
+        x: cell.x + (isOut ? size.w : 0),
+        y: cell.y + size.h / 2
+      };
     },
 
+    /** 实测节点尺寸（带缓存与兜底） */
+    nodeSize: function (nodeId) {
+      this._sizeCache = this._sizeCache || {};
+      var cached = this._sizeCache[nodeId];
+      if (cached && cached.w > 0 && cached.h > 0) return cached;
+
+      var el = this.nodesLayer.querySelector('.node[data-id="' + nodeId + '"]');
+      var w = 0, h = 0;
+      if (el) {
+        w = el.offsetWidth;
+        h = el.offsetHeight;
+      }
+      /* offsetWidth 为 0 说明尚未完成布局，先返回估值但不写缓存 */
+      if (!w || !h) return { w: 168, h: NODE_H_EST, provisional: true };
+
+      var size = { w: w, h: h };
+      this._sizeCache[nodeId] = size;
+      return size;
+    },
+
+    clearSizeCache: function (nodeId) {
+      if (!this._sizeCache) return;
+      if (nodeId) delete this._sizeCache[nodeId];
+      else this._sizeCache = {};
+    },
+
+    /**
+     * 三次贝塞尔连线。
+     * 控制点水平偏移量取两点水平距离的 45%，但设下限与上限，
+     * 避免短距离时曲线过陡、长距离时过于平缓。
+     */
     bezier: function (s, t) {
-      var dx = Math.max(42, Math.abs(t.x - s.x) * 0.45);
-      return 'M' + s.x + ',' + s.y + ' C' + (s.x + dx) + ',' + s.y + ' '
-        + (t.x - dx) + ',' + t.y + ' ' + t.x + ',' + t.y;
+      var dx = Math.abs(t.x - s.x);
+      var ctrl = Math.min(Math.max(dx * 0.45, 36), 140);
+      /* 反向连线（目标在左侧）时控制点外扩，让曲线绕出可见弧线 */
+      if (t.x < s.x) ctrl = Math.max(ctrl, 70);
+      return 'M' + s.x + ',' + s.y + ' C' + (s.x + ctrl) + ',' + s.y + ' '
+        + (t.x - ctrl) + ',' + t.y + ' ' + t.x + ',' + t.y;
     },
 
     drawTempEdge: function (l) {
@@ -686,6 +1090,8 @@
     /* ---------- 属性面板 ---------- */
     renderProps: function () {
       var cell = this.selectedId ? this.getCell(this.selectedId) : null;
+      /* 元素节点与连线节点的定义都要取，后面「节点配置」分组依赖 def */
+      var def = cell ? NodeDefs.get(cell.cellType) : null;
 
       if (!cell) {
         this.propIcon.textContent = '◈';
@@ -716,13 +1122,14 @@
       html += field('名称', '<input type="text" data-bind="name" value="' + esc(cell.name || '') + '">');
       html += '</div>';
 
-      /* 算子节点：显示绑定的算子配置（只读，去算子注册页修改） */
+      /* 算子节点：显示绑定的算子配置（只读），并提供重新绑定入口 */
       if (NodeDefs.isOperatorNode(cell.cellType)) {
         var op = cell.data && cell.data.opId ? Store.getOperator(cell.data.opId) : null;
         html += '<div class="igroup">';
         html += '<div class="igroup-head"><span class="g-dot"></span>绑定的算子</div>';
+
         if (!op) {
-          html += '<div class="tip" style="color:var(--danger)">该算子已被删除，请重新绑定。</div>';
+          html += '<div class="tip" style="color:var(--danger)">该算子已被删除，请在下方重新选择要绑定的算子。</div>';
         } else {
           var t = Store.OP_TYPES[op.opType] || Store.OP_TYPES.http;
           html += field('算子包类型', '<input value="' + esc(t.name + '（' + op.opType + '）') + '" readonly>');
@@ -732,12 +1139,18 @@
           } else if (op.opType === 'sql') {
             html += field('数据库', '<input value="' + esc(op.database) + '" readonly>');
             html += field('SQL 预览', '<textarea rows="4" readonly>' + esc(op.sql || '') + '</textarea>');
-          } else {
+          } else if (op.opType === 'shell') {
             html += field('执行环境', '<input value="' + esc(op.env) + '" readonly>');
             html += field('脚本预览', '<textarea rows="4" readonly>' + esc(op.script || '') + '</textarea>');
+          } else {
+            var kind = (Store.OP_TYPES[op.opType] || {}).cellType || op.opType;
+            html += field('内置能力', '<input value="' + esc(kind) + '" readonly>');
           }
-          html += '<div class="tip">如需修改，请前往「算子注册」页编辑；此处仅做引用。</div>';
         }
+
+        /* 重新绑定下拉：按分组列出全部可用算子 */
+        html += field('重新绑定', this.rebindSelect(cell));
+        html += '<div class="tip">如需修改算子本身，请前往「算子注册」页编辑；此处仅做引用。</div>';
         html += '</div>';
       }
 
@@ -786,6 +1199,55 @@
 
       this.propBody.innerHTML = html;
       this.bindProps(cell);
+    },
+
+    /**
+     * 算子重新绑定下拉框。
+     * 按算子分组罗列全部可用算子，当前绑定的项标 selected；
+     * 若原算子已删除，额外给一个提示用的占位项。
+     */
+    rebindSelect: function (cell) {
+      var cur = (cell.data && cell.data.opId) || '';
+      var all = Store.listOperators();
+      var groups = [
+        { key: 'http', label: 'HTTP 算子' },
+        { key: 'sql', label: 'SQL 算子' },
+        { key: 'shell', label: 'Shell 算子' },
+        { key: 'inner', label: '内部算子' },
+        { key: 'compensate', label: '补偿算子' }
+      ];
+      var html = '<select data-rebind="1"><option value="">— 选择算子 —</option>';
+      if (cur && !Store.getOperator(cur)) {
+        html += '<option value="' + esc(cur) + '" selected>（已删除）' + esc(cur) + '</option>';
+      }
+      groups.forEach(function (g) {
+        var list = all.filter(function (o) {
+          var meta = Store.OP_TYPES[o.opType] || {};
+          return (o.group || meta.group || o.opType) === g.key;
+        });
+        if (!list.length) return;
+        html += '<optgroup label="' + esc(g.label) + '">';
+        list.forEach(function (o) {
+          html += '<option value="' + esc(o.id) + '"'
+            + (o.id === cur ? ' selected' : '') + '>'
+            + esc(o.name) + '（' + esc(o.opType) + '）</option>';
+        });
+        html += '</optgroup>';
+      });
+      return html + '</select>';
+    },
+
+    /** 重新绑定算子：写回 data 与节点名称，并同步画布 */
+    onRebind: function (cell, opId) {
+      var op = Store.getOperator(opId);
+      cell.data = cell.data || {};
+      cell.data.opId = opId;
+      cell.data.opType = op ? op.opType : (cell.data.opType || 'http');
+      if (op) cell.name = op.name;
+      this.persist();
+      this.render();
+      this.select(cell.id);
+      UI.toast(op ? ('已绑定算子「' + op.name + '」') : '已解除算子绑定', 'ok');
     },
 
     renderField: function (cell, f) {
@@ -857,6 +1319,9 @@
           self.persist();
           self.renderNodes();
           self.propTitle.textContent = this.value || NodeDefs.get(cell.cellType).name;
+          /* 名称长度会改变节点宽度，需重新测量并重画连线 */
+          self.clearSizeCache(cell.id);
+          self.renderEdges();
         });
       }
 
@@ -871,6 +1336,14 @@
           self.render();
           self.renderProps();
           UI.toast('已切换为「' + NodeDefs.get(newType).name + '」', 'ok');
+        });
+      }
+
+      /* 算子节点：重新绑定算子 */
+      var rebind = body.querySelector('[data-rebind]');
+      if (rebind) {
+        rebind.addEventListener('change', function () {
+          self.onRebind(cell, this.value);
         });
       }
 

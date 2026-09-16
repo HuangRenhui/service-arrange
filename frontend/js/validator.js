@@ -6,7 +6,17 @@
 
   var EDGE_TYPES = ['edge_common', 'edge_loop', 'edge_decision', 'edge_compensate'];
 
-  function isEdge(c) { return EDGE_TYPES.indexOf(c.cellType) >= 0; }
+  /**
+   * 判断是否为连线类型。
+   * 同时接受两种入参形式，避免调用方混淆：
+   *   isEdge('edge_common')            —— 直接传 cellType 字符串
+   *   isEdge({ cellType: 'edge_...' })  —— 传 Cell 对象
+   */
+  function isEdge(c) {
+    if (!c) return false;
+    var t = (typeof c === 'string') ? c : c.cellType;
+    return EDGE_TYPES.indexOf(t) >= 0;
+  }
 
   /**
    * @param {Object} dsl  { cells: [...], groups: [...], dynamicGlobalParameters: [...] }
@@ -125,6 +135,20 @@
       if (n.cellType === 'node_end' && d.outputsJsonSchema) {
         var r2 = SchemaUtil.validateSchemaString(d.outputsJsonSchema);
         if (!r2.ok) errors.push('R9：结束节点出参 Schema 非法（' + r2.msg + '）');
+      }
+    });
+
+    /* ---- R10 算子引用有效 ----
+     * 节点引用的算子必须仍然存在，否则运行期无法解析出实际调用。 */
+    nodes.forEach(function (n) {
+      if (n.cellType !== 'node_op') return;
+      var opId = n.data && n.data.opId;
+      if (!opId) {
+        errors.push('R10：节点「' + (n.name || n.cellType) + '」未绑定算子');
+        return;
+      }
+      if (global.Store && !Store.getOperator(opId)) {
+        errors.push('R10：节点「' + (n.name || n.cellType) + '」引用的算子已不存在（' + opId + '），请重新绑定');
       }
     });
 
