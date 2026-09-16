@@ -603,6 +603,9 @@
     });
     document.getElementById('brandHome').onclick = function () { App.show('instances'); };
 
+    /* 预置内置算子（数据映射 / 规则转换 / 数组提取 等），仅在首次运行时执行 */
+    Store.seedBuiltinOperators();
+
     /* 模块初始化 */
     Designer.init();
     Instances.init();

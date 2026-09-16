@@ -1,8 +1,12 @@
 /* ===== 节点定义 =====
  * 两类节点来源：
- *   1. 内置节点（NODES）—— 基础节点、连线、内部算子，与后端 CellType.java 对应
- *   2. 已注册算子（动态）—— 从 Store.listOperators() 读取，按 http / sql / shell 分组，
- *      cellType 统一为 node_op，具体算子 id 存在 data.opId 中
+ *   1. 内置节点（NODES）—— 基础节点与连线，与后端 CellType.java 对应
+ *   2. 已注册算子（动态）—— 从 Store.listOperators() 读取，
+ *      cellType 统一为 node_op，具体算子 id 存在 data.opId 中，
+ *      实际执行的算子类型（http/sql/shell/内部算子）由 data.opType 指定。
+ *
+ * 说明：内部算子（数据映射、规则转换、数组提取等）已统一改为「注册算子」形式，
+ *      由 Store.seedBuiltinOperators() 预置，因此不再在调色板中硬编码。
  */
 (function (global) {
   'use strict';
@@ -11,15 +15,18 @@
   var CATS = {
     basic:      { name: '基础节点',   color: '#2563eb', ico: '⚑', desc: '流程的入口、出口与全局参数' },
     edge:       { name: '连线',       color: '#64748b', ico: '⇢', desc: '节点之间的流转关系' },
-    inner:      { name: '内部算子',   color: '#8b5cf6', ico: '⚙', desc: '引擎内置的数据处理能力' },
     opHttp:     { name: 'HTTP 算子',  color: '#14b8a6', ico: '☁', desc: '已注册的 HTTP 接口算子' },
     opSql:      { name: 'SQL 算子',   color: '#8b5cf6', ico: '⛁', desc: '已注册的数据库 SQL 算子' },
     opShell:    { name: 'Shell 算子', color: '#f59e0b', ico: '$', desc: '已注册的脚本算子' },
+    opInner:    { name: '内部算子',   color: '#8b5cf6', ico: '⚙', desc: '引擎内置的数据处理能力' },
     compensate: { name: '补偿算子',   color: '#ef4444', ico: '⟲', desc: '失败后的反向操作' }
   };
 
-  /* 已注册算子对应的分类 key */
-  var OP_CAT = { http: 'opHttp', sql: 'opSql', shell: 'opShell' };
+  /* 已注册算子对应的分类 key（按 OP_TYPES[t].group 映射） */
+  var OP_CAT = {
+    http: 'opHttp', sql: 'opSql', shell: 'opShell',
+    inner: 'opInner', compensate: 'compensate'
+  };
 
   /* 算子节点统一的 cellType（后端可按此路由，具体算子由 data.opId 指定） */
   var OP_CELLTYPE = 'node_op';
@@ -116,70 +123,8 @@
     {
       cellType: 'edge_compensate', name: '补偿线', cat: 'edge', kind: 'edge', icon: '⟲',
       desc: '源节点失败时转入补偿分支', defaultData: function () { return {}; }, schema: []
-    },
-
-    /* 内部算子 */
-    {
-      cellType: 'node_inner_datamap', name: '数据映射', cat: 'inner', kind: 'node', icon: '⇄',
-      desc: '把上游输出映射为下游入参',
-      defaultData: function () {
-        return {
-          parentsOutputs: [],
-          childInputs: { reqPath: [], reqQuery: [], reqHeaders: [], reqBodyForm: [], reqBodyOther: '' }
-        };
-      },
-      schema: [
-        { key: 'childInputs.reqPath', label: 'Path 参数', type: 'kvpath' },
-        { key: 'childInputs.reqQuery', label: 'Query 参数', type: 'kvpath' },
-        { key: 'childInputs.reqHeaders', label: 'Header', type: 'kvpath' },
-        { key: 'childInputs.reqBodyForm', label: '表单参数', type: 'kvpath' },
-        { key: 'childInputs.reqBodyOther', label: '请求体 Schema', type: 'textarea' }
-      ]
-    },
-    {
-      cellType: 'node_inner_sleep', name: '延时', cat: 'inner', kind: 'node', icon: '⏱',
-      desc: '暂停指定时长',
-      defaultData: function () { return { milliseconds: 1000 }; },
-      schema: [{ key: 'milliseconds', label: '毫秒', type: 'number' }]
-    },
-    {
-      cellType: 'node_inner_transform2Obj', name: '规则转换', cat: 'inner', kind: 'node', icon: '⇉',
-      desc: '按规则重组 JSON',
-      defaultData: function () { return { transformRuleList: [] }; },
-      schema: [{ key: 'transformRuleList', label: '转换规则', type: 'rules',
-        hint: 'key 目标字段 / keyType 类型 / type 规则 / jsonpathMapping 表达式 / defaultValue 兜底' }]
-    },
-    {
-      cellType: 'node_inner_dataresult', name: '数据结果', cat: 'inner', kind: 'node', icon: '▦',
-      desc: '整理并输出结果',
-      defaultData: function () { return { resultRules: [] }; },
-      schema: [{ key: 'resultRules', label: '结果规则', type: 'kv' }]
-    },
-    {
-      cellType: 'node_inner_compensateDatamap', name: '补偿数据映射', cat: 'inner', kind: 'node', icon: '⇄',
-      desc: '为补偿算子组装入参',
-      defaultData: function () {
-        return { parentsOutputs: [], childInputs: { reqPath: [], reqQuery: [], reqHeaders: [], reqBodyForm: [], reqBodyOther: '' } };
-      },
-      schema: [
-        { key: 'childInputs.reqQuery', label: 'Query 参数', type: 'kvpath' },
-        { key: 'childInputs.reqHeaders', label: 'Header', type: 'kvpath' },
-        { key: 'childInputs.reqBodyOther', label: '请求体 Schema', type: 'textarea' }
-      ]
-    },
-
-    /* 补偿算子（内置占位，供补偿线挂接） */
-    {
-      cellType: 'node_outer_httpCompensate', name: 'HTTP 补偿', cat: 'compensate', kind: 'node', icon: '⤺',
-      desc: 'HTTP 调用的补偿动作',
-      defaultData: function () { return { url: '', method: 'POST', headers: [], body: '' }; },
-      schema: [
-        { key: 'url', label: '请求地址', type: 'text' },
-        { key: 'method', label: '请求方法', type: 'select', options: ['GET', 'POST', 'PUT', 'DELETE'] },
-        { key: 'headers', label: '请求头', type: 'kv' },
-        { key: 'body', label: '请求体', type: 'textarea' }
-      ]
     }
+    /* 内部算子与补偿算子已改为「注册算子」形式，见 Store.seedBuiltinOperators() */
   ];
 
   var byType = {};
@@ -190,41 +135,72 @@
     /* 已注册算子节点：按 data.opId 动态取名称与图标 */
     if (cellType === OP_CELLTYPE) {
       return {
-        cellType: OP_CELLTYPE, name: '算子节点', cat: 'opHttp', kind: 'node', icon: '⚙',
+        cellType: OP_CELLTYPE, name: '算子节点', cat: 'opInner', kind: 'node', icon: '⚙',
         desc: '已注册的算子', defaultData: function () { return { opId: '', opType: 'http' }; },
         schema: []
       };
     }
     return byType[cellType] || {
-      cellType: cellType, name: cellType, cat: 'inner', kind: 'node', icon: '?',
+      cellType: cellType, name: cellType, cat: 'opInner', kind: 'node', icon: '?',
       desc: '未知节点类型', defaultData: function () { return {}; }, schema: []
     };
   }
 
-  function categoryOf(cellType) { return CATS[get(cellType).cat] || CATS.inner; }
+  /**
+   * 取分类元信息。
+   * 对算子节点额外接受 opType，以便按算子真实类型着色
+   * （同为 node_op，http 用青色、sql 用紫色、内部算子用紫色、补偿用红色）。
+   */
+  function categoryOf(cellType, opType) {
+    if (cellType === OP_CELLTYPE) {
+      var catKey = OP_CAT[opType] || 'opInner';
+      return CATS[catKey] || CATS.opInner;
+    }
+    return CATS[get(cellType).cat] || CATS.opInner;
+  }
+
+  /** 按 opType 取分组名（http / sql / shell / inner / compensate） */
+  function groupOfOpType(opType) {
+    var meta = (global.Store && Store.OP_TYPES[opType]) || null;
+    return (meta && meta.group) || opType;
+  }
   function isEdgeDef(cellType) { return DslValidator.isEdge(cellType); }
   function isFixed(cellType) { return !!get(cellType).fixed; }
   function isOperatorNode(cellType) { return cellType === OP_CELLTYPE; }
 
   /**
-   * 按分类分组返回节点定义。
-   * 已注册算子会动态注入到 opHttp / opSql / opShell 三个分组。
+   * 按分类分组返回节点定义（仅返回可拖拽的节点，不含连线）。
+   *
+   * 设计说明：连线不是「拖进画布的元素」，而是节点之间的关系，
+   * 必须通过节点右侧桩点拖拽生成。因此调色板中不展示连线分组，
+   * 线型说明改由画布左下角的图例承担。
+   *
+   * 分组顺序：基础节点 → 已注册算子（http / sql / shell / 内部算子 / 补偿算子）。
+   * 空分组不展示。
    */
   function byCategory() {
     var out = [];
-    var ops = (global.Store ? Store.listOperators() : []);
+    var ops = (global.Store ? Store.listOperators() : [])
+      /* 内置算子按 OP_TYPES 声明顺序排列，用户算子按更新时间倒序在前 */
+      .sort(function (a, b) {
+        if (a.builtin !== b.builtin) return a.builtin ? 1 : -1;
+        return (b.updateTime || 0) - (a.updateTime || 0);
+      });
 
     /* 1. 基础节点 */
-    out.push({ key: 'basic', meta: CATS.basic, nodes: NODES.filter(function (n) { return n.cat === 'basic'; }) });
-    /* 2. 连线 */
-    out.push({ key: 'edge', meta: CATS.edge, nodes: NODES.filter(function (n) { return n.cat === 'edge'; }) });
-    /* 3. 内部算子 */
-    out.push({ key: 'inner', meta: CATS.inner, nodes: NODES.filter(function (n) { return n.cat === 'inner'; }) });
+    var basics = NODES.filter(function (n) { return n.cat === 'basic'; });
+    if (basics.length) out.push({ key: 'basic', meta: CATS.basic, nodes: basics });
 
-    /* 4~6. 已注册算子（按 http / sql / shell 分组） */
-    ['http', 'sql', 'shell'].forEach(function (t) {
-      var catKey = OP_CAT[t];
-      var list = ops.filter(function (o) { return o.opType === t; }).map(function (o) {
+    /* 2. 已注册算子，按「算子分组」归入对应分区
+     *    注意：这里遍历的是 group（http / sql / shell / inner / compensate），
+     *    而算子自身的 opType 可能是具体的内置类型（datamap、arrayExtract …），
+     *    因此必须按 (OP_TYPES[opType].group || op.opType) 匹配，不能直接比对 opType。 */
+    var order = ['http', 'sql', 'shell', 'inner', 'compensate'];
+    order.forEach(function (grp) {
+      var catKey = OP_CAT[grp];
+      if (!catKey || !CATS[catKey]) return;
+      var list = ops.filter(function (o) { return groupOf(o) === grp; }).map(function (o) {
+        var meta = Store.OP_TYPES[o.opType] || {};
         return {
           cellType: OP_CELLTYPE,
           opId: o.id,
@@ -232,8 +208,9 @@
           name: o.name || '(未命名算子)',
           cat: catKey,
           kind: 'node',
-          icon: Store.OP_TYPES[t].icon,
-          desc: o.description || Store.OP_TYPES[t].desc,
+          icon: meta.icon || '⚙',
+          desc: o.description || meta.desc || '',
+          builtin: !!o.builtin,
           defaultData: function () { return { opId: o.id, opType: o.opType }; },
           schema: []
         };
@@ -241,10 +218,14 @@
       if (list.length) out.push({ key: catKey, meta: CATS[catKey], nodes: list });
     });
 
-    /* 7. 补偿算子 */
-    out.push({ key: 'compensate', meta: CATS.compensate, nodes: NODES.filter(function (n) { return n.cat === 'compensate'; }) });
-
     return out;
+  }
+
+  /** 取算子所属分组：优先用算子自身 group 字段，其次查 OP_TYPES，最后回落到 opType */
+  function groupOf(op) {
+    if (op.group) return op.group;
+    var meta = (global.Store && Store.OP_TYPES[op.opType]) || null;
+    return meta && meta.group ? meta.group : op.opType;
   }
 
   global.NodeDefs = {

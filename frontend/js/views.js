@@ -529,7 +529,9 @@
       this.editingId = opId || '';
       var op = opId ? Store.getOperator(opId) : null;
 
-      document.getElementById('opDrawerTitle').textContent = op ? '编辑算子' : '新建算子';
+      var isBuiltin = !!(op && op.builtin);
+      document.getElementById('opDrawerTitle').textContent =
+        op ? (isBuiltin ? '编辑内置算子' : '编辑算子') : '新建算子';
       document.getElementById('opName2').value = op ? op.name : '';
       document.getElementById('opDesc2').value = op ? (op.description || '') : '';
       document.getElementById('opType2').value = op ? op.opType : 'http';
@@ -548,10 +550,12 @@
         } else if (op.opType === 'sql') {
           document.getElementById('opDatabase').value = op.database || '';
           document.getElementById('opSql').value = op.sql || '';
-        } else {
+        } else if (op.opType === 'shell') {
           document.getElementById('opEnv').value = op.env || '';
           document.getElementById('opScript').value = op.script || '';
           document.getElementById('opTimeout2').value = op.timeout || 30000;
+        } else if (isBuiltin) {
+          this.fillBuiltinForm(op);
         }
       } else {
         document.getElementById('opUrl2').value = '';
@@ -580,9 +584,50 @@
     },
 
     switchForm: function (type) {
+      var builtin = Store.REGISTERABLE_TYPES.indexOf(type) < 0;
       document.getElementById('opFormHttp').style.display = type === 'http' ? '' : 'none';
       document.getElementById('opFormSql').style.display = type === 'sql' ? '' : 'none';
       document.getElementById('opFormShell').style.display = type === 'shell' ? '' : 'none';
+      document.getElementById('opFormBuiltin').style.display = builtin ? '' : 'none';
+      if (builtin) this.fillBuiltinMeta(type);
+    },
+
+    /** 内置算子：填写能力说明与配置 JSON 模板 */
+    fillBuiltinMeta: function (type) {
+      var meta = Store.OP_TYPES[type] || {};
+      document.getElementById('opBuiltinKind').value =
+        (meta.name || type) + '（' + (meta.cellType || type) + '）';
+      document.getElementById('opBuiltinHint').innerHTML =
+        esc(meta.desc || '') + '。按后端 DSL 的 <code>data</code> 结构填写，保存后可在编排页拖拽使用。';
+    },
+
+    /** 内置算子：把算子对象中除元信息外的字段序列化为 JSON 填入 */
+    fillBuiltinForm: function (op) {
+      this.fillBuiltinMeta(op.opType);
+      var data = {};
+      Object.keys(op).forEach(function (k) {
+        if (['id', 'opType', 'name', 'description', 'createTime', 'updateTime',
+          'builtin', 'group'].indexOf(k) >= 0) return;
+        data[k] = op[k];
+      });
+      document.getElementById('opBuiltinData').value = JSON.stringify(data, null, 2);
+    },
+
+    /** 内置算子：解析配置 JSON，返回待合并的字段；解析失败返回 null */
+    parseBuiltinForm: function () {
+      var raw = document.getElementById('opBuiltinData').value.trim();
+      if (!raw) return {};
+      try {
+        var v = JSON.parse(raw);
+        if (v === null || typeof v !== 'object' || Array.isArray(v)) {
+          UI.toast('配置必须是 JSON 对象', 'warn');
+          return null;
+        }
+        return v;
+      } catch (e) {
+        UI.toast('配置 JSON 解析失败：' + e.message, 'warn');
+        return null;
+      }
     },
 
     renderKv: function (which) {
@@ -647,7 +692,7 @@
         if (!sql) { UI.toast('请填写 SQL 语句', 'warn'); return; }
         op.database = db;
         op.sql = sql;
-      } else {
+      } else if (type === 'shell') {
         var env = document.getElementById('opEnv').value;
         var script = document.getElementById('opScript').value.trim();
         if (!env) { UI.toast('请选择执行环境', 'warn'); return; }
@@ -655,6 +700,16 @@
         op.env = env;
         op.script = script;
         op.timeout = Number(document.getElementById('opTimeout2').value) || 30000;
+      } else {
+        /* 内置算子：整体覆盖配置字段（保留元信息） */
+        var cfg = this.parseBuiltinForm();
+        if (cfg === null) return;
+        Object.keys(op).forEach(function (k) {
+          if (['id', 'opType', 'name', 'description', 'createTime', 'updateTime',
+            'builtin', 'group'].indexOf(k) >= 0) return;
+          delete op[k];
+        });
+        Object.keys(cfg).forEach(function (k) { op[k] = cfg[k]; });
       }
 
       Api.operator.save(op).then(function () {
@@ -670,7 +725,7 @@
       var all = Store.listOperators();
 
       var list = all.filter(function (o) {
-        if (this.typeFilter && o.opType !== this.typeFilter) return false;
+        if (!matchFilter(o, this.typeFilter)) return false;
         if (this.keyword) {
           var hay = (o.name + ' ' + (o.description || '')).toLowerCase();
           if (hay.indexOf(this.keyword) < 0) return false;
@@ -855,7 +910,41 @@
   function preview(o) {
     if (o.opType === 'http') return (o.method || 'GET') + ' ' + (o.url || '—');
     if (o.opType === 'sql') return (o.database || '—') + ' · ' + (o.sql || '').split('\n')[0].slice(0, 46);
-    return (o.env || '—') + ' · ' + (o.script || '').split('\n')[0].slice(0, 46);
+    if (o.opType === 'shell') return (o.env || '—') + ' · ' + (o.script || '').split('\n')[0].slice(0, 46);
+    /* 内置算子：展示关键配置摘要 */
+    var keys = Object.keys(o).filter(function (k) {
+      return ['id', 'opType', 'name', 'description', 'createTime', 'updateTime',
+        'builtin', 'group'].indexOf(k) < 0;
+    });
+    if (!keys.length) return '无额外配置';
+    return keys.slice(0, 3).map(function (k) {
+      return k + '=' + preview1(o[k]);
+    }).join(', ') + (keys.length > 3 ? ' …' : '');
+  }
+
+  function preview1(v) {
+    if (v === null || v === undefined) return '—';
+    if (Array.isArray(v)) return '[' + v.length + ']';
+    if (typeof v === 'object') return '{…}';
+    var s = String(v);
+    return s.length > 28 ? s.slice(0, 28) + '…' : s;
+  }
+
+  /**
+   * 算子类型筛选。
+   * 支持三种取值：
+   *   ''            全部
+   *   '__inner'     内部算子（group=inner）
+   *   '__compensate' 补偿算子（group=compensate）
+   *   其他           按 opType 精确匹配（http / sql / shell / 具体内置类型）
+   */
+  function matchFilter(o, filter) {
+    if (!filter) return true;
+    var meta = Store.OP_TYPES[o.opType] || {};
+    var grp = o.group || meta.group || o.opType;
+    if (filter === '__inner') return grp === 'inner';
+    if (filter === '__compensate') return grp === 'compensate';
+    return o.opType === filter;
   }
 
   function pretty(v) {
