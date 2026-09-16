@@ -1,24 +1,3 @@
-apollo:
-  bootstrap:
-    eagerLoad:
-      #true：Apollo的加载顺序放到日志系统加载之前，不过这会导致Apollo的启动过程无法通过日志的方式输出(因为执行Apollo加载的时候，
-      #日志系统压根没有准备好呢！所以在Apollo代码中使用Slf4j的日志输出便没有任何内容)
-      enabled: false
-    namespaces: application.common #Apollo命名空间
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${eureka-url} #eureka 默认地址
-  instance:
-    #注册名
-    instance-id: ${spring.cloud.client.hostname}:${spring.application.name}:${spring.cloud.client.ip-address}:${spring.application.instance_id:${server.port:8080}}
-    #将IP注册到Eureka Server上，而如果不配置就是机器的主机名
-    ip-address: 8.129.116.16
-    prefer-ip-address: true
-    #状态页面的URL，相对路径，默认使用 HTTP 访问，如需使用 HTTPS则要使用绝对路径配置，缺省：/test/public/info
-    status-page-url-path: /test/public/info
-
 server:
   port: 8082 #服务器端口
   servlet:

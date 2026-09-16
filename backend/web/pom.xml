@@ -14,31 +14,11 @@
     <version>1.0-SNAPSHOT</version>
     <name>service-arrange-web</name>
 
-    <properties>
-        <!-- eureka 和 apollo 地址-->
-        <eureka-url>http://8.129.116.16:8761/eureka/</eureka-url>
-        <!-- resources\META-INF\app.properties 中应用 -->
-        <!--        <apollo-meta>http://8.129.116.16:8090</apollo-meta>-->
-
-    </properties>
     <dependencies>
-        <!-- SpringBoot自动配置依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
             <version>${spring-boot.version}</version>
-        </dependency>
-        <!-- SpringCloud-Eureka客户端 -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-            <version>${eureka.version}</version>
-        </dependency>
-        <!-- Apollo客户端连接依赖 -->
-        <dependency>
-            <groupId>com.ctrip.framework.apollo</groupId>
-            <artifactId>apollo-client</artifactId>
-            <version>${apollo.version}</version>
         </dependency>
         <dependency>
             <groupId>com.hrh.servicearrange</groupId>
@@ -172,24 +152,31 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>8</source>
-                    <target>8</target>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
             </plugin>
         </plugins>
         <resources>
-            <!-- 打包指定路径资源 -->
+            <!-- 仅文本资源开启 filtering，避免二进制文件被当文本处理 -->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <includes>
+                    <include>**/*.yml</include>
+                    <include>**/*.yaml</include>
+                    <include>**/*.properties</include>
+                </includes>
             </resource>
             <resource>
-                <directory>src/main/resources/META-INF/</directory>
-                <targetPath>/META-INF</targetPath>
-                <includes>
-                    <include>app.properties</include>
-                </includes>
-                <filtering>true</filtering>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/*.yml</exclude>
+                    <exclude>**/*.yaml</exclude>
+                    <exclude>**/*.properties</exclude>
+                </excludes>
             </resource>
         </resources>
     </build>
