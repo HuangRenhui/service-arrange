@@ -39,6 +39,21 @@ public class MongoDBConfig extends AbstractMongoConfiguration {
     @Value("${spring.data.mongodb.password}")
     private String password;
 
+    @Value("${spring.data.mongodb.connections-per-host:50}")
+    private Integer mongoConnections;
+
+    @Value("${spring.data.mongodb.connect-timeout:5000}")
+    private Integer mongoConnectTimeout;
+
+    @Value("${spring.data.mongodb.socket-timeout:30000}")
+    private Integer mongoSocketTimeout;
+
+    @Value("${spring.data.mongodb.max-wait-time:5000}")
+    private Integer mongoMaxWaitTime;
+
+    @Value("${spring.data.mongodb.max-idle-time:60000}")
+    private Integer mongoMaxIdleTime;
+
     @Bean
     MongoTransactionManager transactionManager(MongoDbFactory dbFactory) {
         return new MongoTransactionManager(dbFactory);
@@ -56,13 +71,17 @@ public class MongoDBConfig extends AbstractMongoConfiguration {
     @Override
     public MongoClient mongoClient() {
         MongoClientOptions.Builder builder = new MongoClientOptions.Builder();
-        //设置每个连接地址的最大连接数
-//        builder.connectionsPerHost(10);
-        //设置连接的超时时间
-//        builder.connectTimeout(5000);
-        //设置读写的超时时间
-//        builder.socketTimeout(5000);
-        
+        //设置每个连接地址的最大连接数：限制单机连接上限，避免高负载下连接数无限增长
+        builder.connectionsPerHost(mongoConnections);
+        //设置连接的超时时间：单位毫秒，避免 broker/DB 不可达时线程长期阻塞
+        builder.connectTimeout(mongoConnectTimeout);
+        //设置读写的超时时间：单位毫秒，避免慢查询长期占用消费线程
+        builder.socketTimeout(mongoSocketTimeout);
+        //设置等待可用连接的最大时间：单位毫秒，连接池被占满时快速失败而不是无限等待
+        builder.maxWaitTime(mongoMaxWaitTime);
+        //设置空闲连接超时时间：单位毫秒，回收长时间不用的连接
+        builder.maxConnectionIdleTime(mongoMaxIdleTime);
+
         builder.writeConcern(WriteConcern.MAJORITY);
         //replication.enableMajorityReadConcern 
 //        builder.readConcern(ReadConcern.MAJORITY);

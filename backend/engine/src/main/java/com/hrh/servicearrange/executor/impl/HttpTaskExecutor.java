@@ -16,6 +16,7 @@ import com.hrh.servicearrange.entity.Task;
 import com.hrh.servicearrange.executor.Execute;
 import com.hrh.servicearrange.parser.annotation.CellType;
 import com.hrh.servicearrange.utils.JsonSchemaUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -38,6 +39,19 @@ import java.util.stream.Collectors;
  */
 @Service(CellType.OPERATOR_HTTP)
 public class HttpTaskExecutor implements Execute {
+
+    /**
+     * HTTP 连接超时：单位毫秒。避免下游不可达时长时间占用消费线程
+     */
+    @Value("${task.http.connect-timeout:5000}")
+    private int connectTimeout;
+
+    /**
+     * HTTP 读取超时：单位毫秒。避免下游挂起导致消费线程被无限期占用（消费并发默认为 1，会阻塞整条链路）
+     */
+    @Value("${task.http.read-timeout:30000}")
+    private int readTimeout;
+
     @Override
     public Task runProcess(Task task, Inst inst, TaskDao taskDao, InstLogDao instLogDao) {
         //需要文件上传的文件名集合
@@ -126,6 +140,8 @@ public class HttpTaskExecutor implements Execute {
                 }
                 HttpResponse httpResponse = null;
                 HttpRequest httpRequest = HttpUtil.createRequest(getMethod(requestType), inPathParamUrl.toString()).addHeaders(inHeaderParam);
+                //设置连接与读取超时，防止下游慢响应或无响应时无限期占用消费线程
+                httpRequest = httpRequest.timeout(readTimeout).setConnectionTimeout(connectTimeout);
                 if (bodyParamStr != null && !bodyParamStr.equals("{}")) {
                     httpRequest = httpRequest.body(bodyParamStr);
                 }
