@@ -2,6 +2,7 @@ package com.hrh.servicearrange.mq;
 
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.hrh.servicearrange.config.BackpressureProperties;
 import com.hrh.servicearrange.dao.TaskDao;
 import com.hrh.servicearrange.entity.Task;
 import com.hrh.servicearrange.executor.Execute;
@@ -9,6 +10,7 @@ import com.hrh.servicearrange.parser.annotation.CellType;
 import com.hrh.servicearrange.utils.SpringBeanUtils;
 import com.hrh.servicearrange.vo.Task4MQ;
 import com.rabbitmq.client.Channel;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ import java.util.Arrays;
 /**
  * 任务消费，执行具体任务
  */
+@Slf4j
 @Component
 @EnableBinding(MqChannelProcessor.class)
 public class TaskRunConsumer {
@@ -32,6 +35,8 @@ public class TaskRunConsumer {
     private TaskDao taskDao;
     @Autowired
     private TaskProductor taskProductor;
+    @Autowired
+    private BackpressureProperties backpressure;
 
     @StreamListener(target = MqChannelProcessor.TASK_RUN_INPUT)
     @RabbitHandler
@@ -60,8 +65,10 @@ public class TaskRunConsumer {
                 taskProductor.ackTask(deliveryTag, channel, "ack,can't find the task:" + task4MQ.getId());
                 return;
             }
-            if (task.getRunNackTimes() >= 5) {
-                taskProductor.ackTask(deliveryTag, channel, "ack,runNackTimes>=5,this message may never be ack,forece ack this message.");
+            //超过重试上限，强制 ack 丢弃，避免毒消息永久占用消费线程（当前消费并发为 1，占用即阻塞整条链路）
+            int runNackTimes = task.getRunNackTimes() == null ? 0 : task.getRunNackTimes();
+            if (runNackTimes >= backpressure.getMaxHandleTimes()) {
+                taskProductor.ackTask(deliveryTag, channel, "ack,runNackTimes>=" + backpressure.getMaxHandleTimes() + ",this message may never be ack,forece ack this message.");
                 return;
             }
             Execute execute = null;

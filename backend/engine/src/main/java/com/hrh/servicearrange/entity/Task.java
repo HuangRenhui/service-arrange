@@ -97,6 +97,16 @@ public class Task extends BaseEntity implements Serializable {
     @Field("runNackTimes")
     private Integer runNackTimes = 0;
     /**
+     * 抢实例锁失败导致的消息重排队次数，用于背压保护：超过上限后丢弃消息，避免热点空转
+     */
+    @Field("lockNackTimes")
+    private Integer lockNackTimes = 0;
+    /**
+     * 延迟重投时间：重排队时用于做退避（避免立即重新入队造成忙等）
+     */
+    @Field("nextRetryTime")
+    private Date nextRetryTime;
+    /**
      * 总开始时间
      */
     @Field("startDate")
@@ -347,6 +357,22 @@ public class Task extends BaseEntity implements Serializable {
 
     public void setRunNackTimes(Integer runNackTimes) {
         this.runNackTimes = runNackTimes;
+    }
+
+    public Integer getLockNackTimes() {
+        return lockNackTimes;
+    }
+
+    public void setLockNackTimes(Integer lockNackTimes) {
+        this.lockNackTimes = lockNackTimes;
+    }
+
+    public Date getNextRetryTime() {
+        return nextRetryTime;
+    }
+
+    public void setNextRetryTime(Date nextRetryTime) {
+        this.nextRetryTime = nextRetryTime;
     }
 
     public Date getStartDate() {

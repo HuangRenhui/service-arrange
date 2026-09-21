@@ -31,14 +31,16 @@ spring:
         task_result_input_channel:
           binder: rabbit_cluster
           consumer:
-            concurrency: 1
+            concurrency: ${task.consumer.result-concurrency:2}
+            max-attempts: 1
           content-type: application/json
           destination: ${spring.application.name}-exchange-point
           group: ${task.result_queue_name}
         task_run_input_channel:
           binder: rabbit_cluster
           consumer:
-            concurrency: 1
+            concurrency: ${task.consumer.run-concurrency:2}
+            max-attempts: 1
           content-type: application/json
           destination: ${spring.application.name}-exchange-point
           group: ${task.run_queue_name}
@@ -66,6 +68,12 @@ spring:
       password: 123456
       port: 27017
       username: admin
+      #连接池与超时：避免线程长期阻塞在数据库IO上
+      connections-per-host: 50
+      connect-timeout: 5000
+      socket-timeout: 30000
+      max-wait-time: 5000
+      max-idle-time: 60000
   #指定打包环境
   profiles:
     active: jar
@@ -78,3 +86,25 @@ zk:
 task:
   result_queue_name: /task/result
   run_queue_name: /task/run
+  #消费端并发与背压保护
+  consumer:
+    #结果通道消费并发数，队列堆积时可上调，需与实例处理的串行化设计配合
+    result-concurrency: 2
+    #运行通道消费并发数
+    run-concurrency: 2
+  #HTTP算子超时：避免慢下游无限期占用消费线程
+  http:
+    connect-timeout: 5000
+    read-timeout: 30000
+  #背压保护阈值
+  backpressure:
+    #抢实例锁失败的最大重排队次数，超过后强制ack丢弃，防止无限requeue造成消息热点空转
+    lock-nack-max-times: 10
+    #重排队退避基数：单位毫秒，实际退避=基数*已重排队次数
+    requeue-backoff-base-ms: 200
+    #单次退避上限：单位毫秒
+    requeue-backoff-max-ms: 5000
+    #单条消息最大处理次数（业务nack与抢锁nack共用上限）
+    max-handle-times: 5
+    #重排队是否启用延迟退避
+    delay-requeue-enabled: true

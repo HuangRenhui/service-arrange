@@ -10,6 +10,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.hrh.servicearrange.config.BackpressureProperties;
 import com.hrh.servicearrange.convert.TaskInterface;
 import com.hrh.servicearrange.dao.InstDao;
 import com.hrh.servicearrange.dao.InstLogDao;
@@ -65,6 +66,9 @@ public class TaskResultConsumer {
     @Autowired
     private ITaskService taskService;
 
+    @Autowired
+    private BackpressureProperties backpressure;
+
     @StreamListener(target = MqChannelProcessor.TASK_RESULT_INPUT)
     @RabbitHandler
     public void listenInstTaskResult(Message<?> message,
@@ -87,7 +91,8 @@ public class TaskResultConsumer {
         if (StrUtil.isNotEmpty(lockNode)) {
             run(id, instId, state, outputs, retryRules, channel, deliveryTag, lockNode);
         } else {
-            taskProductor.nAckTask(instId, deliveryTag, channel, "get inst lock fail,do nack.");
+            //抢锁失败：走带次数上限与退避的重排队，避免无限 requeue 导致的消息热点空转
+            taskProductor.nAckLockTask(id, instId, deliveryTag, channel, "get inst lock fail,do nack.");
         }
     }
 
@@ -124,9 +129,9 @@ public class TaskResultConsumer {
             taskProductor.ackTask(instId, deliveryTag, channel, "do ack! inst is suspend:" + instId);
             return;
         }
-        //重试次数超过了5次
-        if (task.getStateNackTimes() >= 5) {
-            taskProductor.ackTask(instId, deliveryTag, channel, "nackTime>=5,this message may never be ack,force ack this message");
+        //重试次数超过上限，强制 ack 丢弃，避免毒消息永久占用消费线程
+        if (task.getStateNackTimes() != null && task.getStateNackTimes() >= backpressure.getMaxHandleTimes()) {
+            taskProductor.ackTask(instId, deliveryTag, channel, "stateNackTimes>=" + backpressure.getMaxHandleTimes() + ",this message may never be ack,force ack this message");
             return;
         }
         task.setEndDate(new Date());
