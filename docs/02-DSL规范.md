@@ -323,6 +323,33 @@
 
 > 解析规则：`key = name`，`value = defaultValue = default`。见 `DslParser#parser` 第 192-229 行。
 
+### 4.8 开始节点的 `globals`（前端采用的形式）
+
+`StartCell.Data` 另有 `globals` 字段（`List<KeyValueDto>`），前端控制台采用这一形式承载全局参数：
+
+```json
+{
+  "cellType": "node_start",
+  "data": {
+    "inputsJsonSchema": "{\"type\":\"object\",\"properties\":{}}",
+    "globals": [
+      { "name": "类别", "key": "wftype", "type": "int", "value": 1 }
+    ]
+  }
+}
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `name` | 显示名，可读文本（如「类别」）|
+| `key` | 引用键，表达式里使用的标识（如 `wftype`）|
+| `type` | 类型，如 `int` / `string` |
+| `value` | 值 |
+
+> 与 4.7 的差异：`global_Data.staticParams` 的 `key` 等于 `name`，而本节形式的 `name` 与 `key` 是**两个独立字段**，可分别填写。前端写入 DSL 时只输出上述四个字段。
+>
+> 该结构取自 `hrh_dslDemo1.json` 中开始节点的实际内容。
+
 ## §5 Group（强组合 / 补偿组）
 
 ```json
@@ -375,15 +402,19 @@
 | R7 | 决策线 / 循环线的 `jsonpathElexpression` 非空 |
 | R8 | `cell.groupIds` 中的 id 必须在 `groups` 中存在 |
 | R9 | `inputsJsonSchema` / `outputsJsonSchema` 必须是合法 JSON 字符串 |
+| R10 | 算子节点的 `data.opId` 必须能解析到已注册算子（缺失或已删除时报错，需重新绑定）|
+| R11 | `#dynamicParams_$<key>` 引用必须在开始节点 `data.globals[].key` 中存在 |
 
 > 引擎侧在 `DslParser` 中使用 `Optional.get()`（如第 33、139、152 行）提取开始/结束节点，若缺失会抛 `NoSuchElementException`，因此 R1 与 R5 属于强约束。
+
+> R10 / R11 为前端新增：R10 对应算子绑定有效性，R11 对应 `DataMapOperateExecutor#valueConvert` L339-346 的动态参数取值（引用名不存在时该处会取不到值）。
 
 ---
 
 ## 📚 相关文档
-- 馃捇 [鍓嶇鎺у埗鍙拌鏄嶿(06-鍓嶇鎺у埗鍙拌鏄?md) 鈥?鏈鑼冨湪鍓嶇鐨勮惤鍦帮紙鑺傜偣搴撱€佸睘鎬ч潰鏉裤€佹牎楠岋級
-- 鈿欙笍 [鎵ц寮曟搸涓庤皟搴︽祦绋媇(03-鎵ц寮曟搸涓庤皟搴︽祦绋?md) 鈥?鏈鑼冨浣曡瑙ｆ瀽鎴愬彲璋冨害鍥綻r
-- 馃梽锔?[鏁版嵁妯″瀷涓庢秷鎭ā鍨媇(04-鏁版嵁妯″瀷涓庢秷鎭ā鍨?md) 鈥?DSL 钀藉簱鍚庣殑 Inst 缁撴瀯
-- 馃З [绠楀瓙鎵╁睍鎸囧崡](07-算子扩展指南.md) 鈥?鏂板 cellType 鐨勫畬鏁存楠r
-- 馃И [娴嬭瘯鎸囧崡](14-测试指南.md) §3 鈥?瑙ｆ瀽灞傞獙璇佺敤渚媊r
-- 馃搻 [缂栫爜瑙勮寖](16-编码规范.md) §1.2 鈥?cellType 鍛藉悕瑙勮寖
+- 💻 [前端控制台说明](06-前端控制台说明.md) — 本规范在前端的落地（节点库、属性面板、校验）
+- ⚙️ [执行引擎与调度流程](03-执行引擎与调度流程.md) — 本规范如何被解析成可调度图
+- 🗂️ [数据模型与消息模型](04-数据模型与消息模型.md) — DSL 落库后的 Inst 结构
+- 🧩 [算子扩展指南](07-算子扩展指南.md) — 新增 cellType 的完整步骤
+- 🧪 [测试指南](14-测试指南.md) §3 — 解析层验证用例
+- 📏 [编码规范](16-编码规范.md) §1.2 — cellType 命名规范
