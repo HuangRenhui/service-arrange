@@ -87,6 +87,16 @@
         <input id="paletteSearch" placeholder="搜索节点 / 算子…" autocomplete="off">
       </div>
       <div class="palette-body" id="nodeCatalog"></div>
+
+      <!-- 线型选择：决定从算子节点拖出的连线类型 -->
+      <div class="edge-picker">
+        <div class="ep-head">
+          <span class="ep-title">连线类型</span>
+          <span class="ep-cur" id="epCur">普通线</span>
+        </div>
+        <div class="ep-list" id="edgeTypeList"></div>
+      </div>
+
       <div class="palette-foot">
         <button class="link-btn" id="btnCollapseAll">全部折叠</button>
         <button class="link-btn" id="btnExpandAll">全部展开</button>
@@ -171,21 +181,30 @@
       </div>
     </section>
 
-    <aside class="inspector">
+    <aside class="inspector" id="inspector">
+      <!-- 拖拽调宽手柄 -->
+      <div class="insp-resizer" id="inspResizer" title="拖拽调整宽度"></div>
       <div class="inspector-head">
         <span class="ih-icon" id="propIcon">◈</span>
         <div class="ih-text">
           <div class="ih-title" id="propTitle">属性面板</div>
           <div class="ih-sub" id="propSub">未选中任何元素</div>
         </div>
+        <button class="ih-collapse" id="btnCollapseInsp" title="收起属性面板（Esc）">›</button>
       </div>
       <div class="inspector-body" id="propBody">
         <div class="insp-empty">
           <div class="ie-ico">⇦</div>
-          <p>选中画布中的<strong>节点</strong>或<strong>连线</strong><br>即可在此编辑其属性</p>
+          <p><strong>双击</strong>画布中的<strong>节点</strong>或<strong>连线</strong><br>即可在此编辑其属性</p>
         </div>
       </div>
     </aside>
+
+    <!-- 收起后的窄条，点击可展开 -->
+    <button class="insp-rail" id="inspRail" title="展开属性面板" style="display:none">
+      <span class="ir-arrow">‹</span>
+      <span class="ir-text">属性</span>
+    </button>
   </main>
 
   <!-- ============================================================
@@ -499,15 +518,8 @@
       <!-- SQL 表单 -->
       <div id="opFormSql" class="op-form" style="display:none">
         <div class="sub-title">SQL 配置</div>
-        <div class="form-row"><label>选择数据库 <span class="req">*</span></label>
-          <select id="opDatabase">
-            <option value="">请选择数据库</option>
-            <option value="mysql-main">mysql-main（主库）</option>
-            <option value="mysql-report">mysql-report（报表库）</option>
-            <option value="pg-order">pg-order（订单库）</option>
-            <option value="oracle-legacy">oracle-legacy（遗留系统）</option>
-          </select>
-        </div>
+        <!-- 数据库连接由「环境配置」统一维护，此处只选择引用 -->
+        <div class="form-row form-row-col" id="opDatabaseBox"></div>
         <div class="form-row form-row-col">
           <label>SQL 语句 <span class="req">*</span></label>
           <textarea id="opSql" rows="12" class="code-editor" spellcheck="false"
@@ -520,15 +532,8 @@
       <div id="opFormShell" class="op-form" style="display:none">
         <div class="sub-title">Shell 配置</div>
         <div class="grid-2">
-          <div class="form-row"><label>执行环境 <span class="req">*</span></label>
-            <select id="opEnv">
-              <option value="">请选择执行环境</option>
-              <option value="linux-prod-01">linux-prod-01</option>
-              <option value="linux-prod-02">linux-prod-02</option>
-              <option value="linux-test-01">linux-test-01</option>
-              <option value="local">本机</option>
-            </select>
-          </div>
+          <!-- 执行环境由「环境配置」统一维护，此处只选择引用 -->
+          <div class="form-row form-row-col" id="opEnvBox"></div>
           <div class="form-row"><label>超时(ms)</label><input id="opTimeout2" type="number" value="30000"></div>
         </div>
         <div class="form-row form-row-col">
@@ -554,6 +559,25 @@
         </div>
       </div>
 
+      <!-- 作用域：决定算子是否可跨实例复用（内置算子不展示此项） -->
+      <div id="opScopeBox" class="op-scope">
+        <div class="sub-title">使用范围</div>
+        <label class="scope-opt">
+          <input type="radio" name="opScope" value="local" checked>
+          <span class="so-text">
+            <strong>临时算子</strong>
+            <em>仅在当前实例可见</em>
+          </span>
+        </label>
+        <label class="scope-opt">
+          <input type="radio" name="opScope" value="shared">
+          <span class="so-text">
+            <strong>注册为复用算子</strong>
+            <em>注册后所有实例都能看到并使用</em>
+          </span>
+        </label>
+      </div>
+
       <div class="form-actions">
         <button class="btn btn-primary" id="btnOpSave2">保存算子</button>
         <button class="btn" id="btnOpCancel2">取消</button>
@@ -561,7 +585,7 @@
     </div>
   </aside>
 
-  <!-- ============ 模态 ============ -->
+  <!-- ============ 模态：大文本编辑（DSL / 导入导出）============ -->
   <div class="modal-mask" id="modalMask">
     <div class="modal">
       <div class="modal-head">
@@ -575,6 +599,39 @@
       <div class="modal-foot">
         <button class="btn" id="modalCancel">关闭</button>
         <button class="btn btn-primary" id="modalOk">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 轻量输入框：单行输入 + 确定/取消 ============ -->
+  <div class="confirm-mask" id="promptMask">
+    <div class="confirm-box" role="dialog" aria-modal="true">
+      <div class="cb-head">
+        <span class="cb-title" id="promptTitle">输入</span>
+        <button class="cb-close" id="promptClose" title="关闭">✕</button>
+      </div>
+      <div class="cb-body">
+        <div class="cb-hint" id="promptHint"></div>
+        <input type="text" class="cb-input" id="promptInput" spellcheck="false">
+      </div>
+      <div class="cb-foot">
+        <button class="btn" id="promptCancel">取消</button>
+        <button class="btn btn-primary" id="promptOk">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 轻量确认框：一句话提示 + 确定/取消 ============ -->
+  <div class="confirm-mask" id="confirmMask">
+    <div class="confirm-box" role="dialog" aria-modal="true">
+      <div class="cb-head">
+        <span class="cb-title" id="confirmTitle">确认操作</span>
+        <button class="cb-close" id="confirmClose" title="关闭">✕</button>
+      </div>
+      <div class="cb-body" id="confirmText"></div>
+      <div class="cb-foot">
+        <button class="btn" id="confirmCancel">取消</button>
+        <button class="btn btn-primary" id="confirmOk">确定</button>
       </div>
     </div>
   </div>
