@@ -66,10 +66,105 @@
       return { close: cleanup, textarea: ta, msg: msg };
     },
 
-    confirmAction: function (text, onYes) {
-      this.modal('确认操作', text, {
-        readOnly: true, okText: '确定', onOk: function () { onYes(); }
-      });
+    /**
+     * 轻量单行输入框。
+     * 用于「新建实例」「重命名」等只需一个名称的场景，
+     * 避免复用 modal() 的大 textarea（原先靠 height:44px 硬凑单行输入）。
+     * @param {Object} opts { title, hint, value, placeholder, okText,
+     *                        cancelText, required, maxLength, onOk(value) }
+     *                       onOk 返回 false 时不关闭
+     */
+    prompt: function (opts) {
+      opts = opts || {};
+      var mask = document.getElementById('promptMask');
+      var titleEl = document.getElementById('promptTitle');
+      var hintEl = document.getElementById('promptHint');
+      var input = document.getElementById('promptInput');
+      var okBtn = document.getElementById('promptOk');
+      var cancelBtn = document.getElementById('promptCancel');
+      var closeBtn = document.getElementById('promptClose');
+
+      titleEl.textContent = opts.title || '输入';
+      hintEl.textContent = opts.hint || '';
+      input.value = opts.value || '';
+      input.placeholder = opts.placeholder || '';
+      if (opts.maxLength) input.maxLength = opts.maxLength; else input.removeAttribute('maxlength');
+      okBtn.textContent = opts.okText || '确定';
+      cancelBtn.textContent = opts.cancelText || '取消';
+
+      mask.classList.add('open');
+      setTimeout(function () { input.focus(); input.select(); }, 60);
+
+      function cleanup() {
+        mask.classList.remove('open');
+        okBtn.onclick = null; cancelBtn.onclick = null; closeBtn.onclick = null; mask.onclick = null;
+        input.onkeydown = null;
+        input.value = '';
+      }
+      function submit() {
+        var v = input.value;
+        if (opts.required && !v.trim()) {
+          UI.toast(opts.requiredMsg || '不能为空', 'warn');
+          input.focus();
+          return;
+        }
+        if (opts.onOk && opts.onOk(v) === false) return;
+        cleanup();
+      }
+
+      okBtn.onclick = submit;
+      cancelBtn.onclick = cleanup;
+      closeBtn.onclick = cleanup;
+      mask.onclick = function (e) { if (e.target === mask) cleanup(); };
+      input.onkeydown = function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); submit(); }
+        if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
+      };
+      return { close: cleanup, input: input };
+    },
+
+    /**
+     * 轻量确认框：一句话提示 + 确定/取消。
+     * 不复用 modal()（那是为大文本编辑设计的，780px 宽 + 大 textarea）。
+     * @param {string} text   提示内容（支持换行）
+     * @param {Function} onYes 点「确定」时回调
+     * @param {Object} [opts] { title, okText, cancelText, danger }
+     */
+    confirmAction: function (text, onYes, opts) {
+      opts = opts || {};
+      var mask = document.getElementById('confirmMask');
+      var titleEl = document.getElementById('confirmTitle');
+      var textEl = document.getElementById('confirmText');
+      var okBtn = document.getElementById('confirmOk');
+      var cancelBtn = document.getElementById('confirmCancel');
+      var closeBtn = document.getElementById('confirmClose');
+
+      titleEl.textContent = opts.title || '确认操作';
+      textEl.textContent = text || '';
+      okBtn.textContent = opts.okText || '确定';
+      cancelBtn.textContent = opts.cancelText || '取消';
+      okBtn.classList.toggle('btn-danger', !!opts.danger);
+
+      mask.classList.add('open');
+      setTimeout(function () { okBtn.focus(); }, 60);
+
+      function cleanup() {
+        mask.classList.remove('open');
+        okBtn.onclick = null; cancelBtn.onclick = null; closeBtn.onclick = null; mask.onclick = null;
+        document.removeEventListener('keydown', onKey, true);
+      }
+      function onKey(e) {
+        if (!mask.classList.contains('open')) return;
+        if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
+        if (e.key === 'Enter') { e.preventDefault(); okBtn.click(); }
+      }
+
+      cancelBtn.onclick = cleanup;
+      closeBtn.onclick = cleanup;
+      okBtn.onclick = function () { cleanup(); if (onYes) onYes(); };
+      mask.onclick = function (e) { if (e.target === mask) cleanup(); };
+      document.addEventListener('keydown', onKey, true);
+      return { close: cleanup };
     },
 
     copy: function (text) {
@@ -166,6 +261,9 @@
       Store.setCurrentInstanceId(instId);
       Designer.loadInstance(inst);
       this.show('designer', { instId: instId });
+      /* 进入编排页时收起属性面板，把视野留给画布；
+         用户双击节点或拖入新节点时再展开。 */
+      Designer.collapseInspector();
     },
 
     /** 打开某实例的运行记录 */
@@ -387,14 +485,16 @@
     mockInputs: function (cell, runInputs) {
       var d = cell.data || {};
       if (cell.cellType === 'node_start') return runInputs;
-      if (cell.cellType === 'node_op' && d.opType === 'sql') {
+      /* 补偿算子复用同族外部算子的入参形态 */
+      var ot = d.opType ? Store.baseOpType(d.opType) : '';
+      if (cell.cellType === 'node_op' && ot === 'sql') {
         return { database: d.database || '—', sql: '（按算子注册定义）' };
       }
-      if (cell.cellType === 'node_op' && d.opType === 'shell') {
+      if (cell.cellType === 'node_op' && ot === 'shell') {
         return { env: d.env || '—', script: '（按算子注册定义）' };
       }
       if (cell.cellType === 'node_op') {
-        return { method: d.method || 'POST', url: d.url || '—', body: d.body || '' };
+        return { method: d.requestType || d.method || 'POST', url: d.url || '—', body: d.body || '' };
       }
       if (cell.cellType === 'node_outer_http') {
         return { method: d.method || 'POST', url: d.url || '—', body: d.body || '' };
@@ -407,10 +507,11 @@
     mockOutputs: function (cell) {
       if (cell.cellType === 'node_start') return { accepted: true };
       if (cell.cellType === 'node_end') return { ok: true };
-      if (cell.cellType === 'node_op' && cell.data && cell.data.opType === 'sql') {
+      var ot = (cell.data && cell.data.opType) ? Store.baseOpType(cell.data.opType) : '';
+      if (cell.cellType === 'node_op' && ot === 'sql') {
         return { rows: 3, data: [{ id: 1 }, { id: 2 }, { id: 3 }] };
       }
-      if (cell.cellType === 'node_op' && cell.data && cell.data.opType === 'shell') {
+      if (cell.cellType === 'node_op' && ot === 'shell') {
         return { exitCode: 0, stdout: 'done' };
       }
       return { code: 200, message: 'success' };
@@ -603,8 +704,11 @@
     });
     document.getElementById('brandHome').onclick = function () { App.show('instances'); };
 
-    /* 预置内置算子（数据映射 / 规则转换 / 数组提取 等），仅在首次运行时执行 */
+    /* 预置内置算子与补偿算子，并在版本升级时清理已移除的孤儿记录 */
     Store.seedBuiltinOperators();
+
+    /* 预置环境配置示例（Shell 执行环境 / 数据库连接），仅在首次运行时执行 */
+    Store.seedEnvs();
 
     /* 模块初始化 */
     Designer.init();

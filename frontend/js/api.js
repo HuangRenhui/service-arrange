@@ -104,6 +104,116 @@
       return request('/operator/delete', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids)
       });
+    },
+    /**
+     * 注册为复用算子（跨实例可见）。
+     * 后端契约建议：POST /operator/register  body: [opId]
+     */
+    register: function (ids) {
+      ids = Array.isArray(ids) ? ids : [ids];
+      if (!REMOTE.operator) {
+        var fail = null;
+        ids.forEach(function (id) {
+          var r = Store.registerOperator(id);
+          if (!r.ok && !fail) fail = r.msg;
+        });
+        if (fail) return Promise.resolve({ ok: false, msg: fail, local: true });
+        return Promise.resolve({ ok: true, body: 'success', local: true });
+      }
+      return request('/operator/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids)
+      });
+    }
+  };
+
+  /* ==================== 环境配置 ====================
+   * shell 执行环境 / sql 数据库连接的 CRUD 与连通性测试。
+   * 后端契约建议：
+   *   GET  /env/list?kind=shell|sql
+   *   POST /env/save
+   *   POST /env/delete            body: [envId]
+   *   POST /env/test              body: { envId }  → { ok, msg, latency }
+   * 本地兜底：CRUD 走 Store；test 按协议做尽可能真实的探测（见 testEnv）。
+   */
+  var REMOTE_ENV = false;
+
+  /**
+   * 本地连通性探测。
+   * 浏览器无法直接建 TCP/SSH/数据库连接，因此按协议做能力范围内的探测：
+   *   - shell：对 host:port 发起 fetch，能连上（即使跨域报错）说明端口开放；
+   *   - sql  ：同法探测数据库端口。
+   * 明确标注为「端口可达性」而非「登录鉴权」，避免给出误导性结论。
+   * 后端 /env/test 就绪后由 REMOTE_ENV 开关接管，做真正的握手与鉴权。
+   */
+  function probePort(env) {
+    var started = Date.now();
+    var host = env.host;
+    var defPort = { mysql: 3306, postgresql: 5432, oracle: 1521, sqlserver: 1433, dameng: 5236 };
+    var port = env.port || (env.kind === 'shell' ? 22 : (defPort[env.dbType] || 3306));
+    if (!host) return Promise.resolve({ ok: false, msg: '未配置主机地址', latency: 0 });
+
+    var url = (env.kind === 'shell' ? 'http' : 'http') + '://' + host + ':' + port + '/';
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 5000);
+
+    return fetch(url, { method: 'GET', mode: 'no-cors', signal: ctrl ? ctrl.signal : undefined })
+      .then(function () {
+        clearTimeout(timer);
+        return { ok: true, msg: '端口 ' + host + ':' + port + ' 可达', latency: Date.now() - started };
+      }, function (err) {
+        clearTimeout(timer);
+        /* no-cors 下跨域响应会被拦截成 opaque，但连接成功不会进这里；
+           走到这里通常是 ECONNREFUSED / DNS 失败 / 超时。 */
+        var msg = (err && err.name === 'AbortError')
+          ? '连接超时（5s），请检查主机地址与网络'
+          : '无法连接 ' + host + ':' + port;
+        return { ok: false, msg: msg, latency: Date.now() - started };
+      });
+  }
+
+  var EnvApi = {
+    list: function (kind) {
+      if (!REMOTE_ENV) return Promise.resolve({ ok: true, body: Store.listEnvs(kind), local: true });
+      return request('/env/list' + (kind ? '?kind=' + encodeURIComponent(kind) : ''), { method: 'GET' });
+    },
+    save: function (env) {
+      if (!REMOTE_ENV) return Promise.resolve({ ok: true, body: Store.saveEnv(env), local: true });
+      return request('/env/save', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(env)
+      });
+    },
+    remove: function (id) {
+      if (!REMOTE_ENV) return Promise.resolve({ ok: true, body: Store.removeEnv(id), local: true });
+      return request('/env/delete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([id])
+      });
+    },
+    /** 连通性测试：返回 { ok, msg, latency }，并回写 lastTest 便于回看 */
+    test: function (env) {
+      var run = REMOTE_ENV
+        ? request('/env/test', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ envId: env.id })
+        }, 20000)
+        : probePort(env);
+
+      return run.then(function (res) {
+        var r = (res && res.body !== undefined) ? res.body : res;
+        var out = {
+          ok: !!(r && (r.ok === true || r.success === true)),
+          msg: (r && (r.msg || r.message)) || (r && r.ok ? '连接成功' : '连接失败'),
+          latency: (r && r.latency) || 0
+        };
+        if (!out.ok && out.msg === '连接失败' && res && res.status) {
+          out.msg = '测试接口返回 ' + res.status;
+        }
+        if (env && env.id) Store.markEnvTest(env.id, out);
+        return out;
+      }, function () {
+        var out = { ok: false, msg: '测试请求失败，请确认后端服务可用', latency: 0 };
+        if (env && env.id) Store.markEnvTest(env.id, out);
+        return out;
+      });
     }
   };
 
@@ -187,6 +297,7 @@
     // 本地/远程统一入口
     instance: InstanceApi,
     operator: OperatorApi,
+    env: EnvApi,
     run: RunApi,
     log: LogApi,
 
