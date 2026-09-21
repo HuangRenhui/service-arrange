@@ -19,7 +19,8 @@
   }
 
   /**
-   * @param {Object} dsl  { cells: [...], groups: [...], dynamicGlobalParameters: [...] }
+   * @param {Object} dsl  { cells: [...], groups: [...] }
+   *                     全局参数是开始节点 data.globals 的一部分
    * @returns {{ok:boolean, errors:string[], warnings:string[]}}
    */
   function validate(dsl) {
@@ -180,6 +181,33 @@
         }
       }
     });
+
+    /* ---- R11 全局参数引用有效 ----
+     * 其他节点通过 #dynamicParams_$<key> 引用全局参数。
+     * 引用键必须在开始节点的 data.globals 中存在，否则运行期解析不到值。 */
+    var startNode = nodes.filter(function (n) { return n.cellType === 'node_start'; })[0];
+    var dynNames = {};
+    if (startNode && startNode.data) {
+      (startNode.data.globals || []).forEach(function (p) {
+        if (p && p.key) dynNames[p.key] = p;
+      });
+    }
+    var dynCount = Object.keys(dynNames).length;
+    var anyRef = false;
+    nodes.concat(edges).forEach(function (c) {
+      var raw = JSON.stringify(c.data || {});
+      if (raw.indexOf('#dynamicParams_$') >= 0) anyRef = true;
+      var re = /#dynamicParams_\$([A-Za-z_][A-Za-z0-9_]*)/g;
+      var m;
+      while ((m = re.exec(raw)) !== null) {
+        if (!dynNames[m[1]]) {
+          errors.push('R11：' + (c.name || c.cellType) + ' 引用了未定义的全局参数「' + m[1] + '」');
+        }
+      }
+    });
+    if (dynCount && !anyRef) {
+      warnings.push('已定义 ' + dynCount + ' 个全局参数，但没有任何节点引用它们');
+    }
 
     return { ok: errors.length === 0, errors: errors, warnings: warnings };
   }
