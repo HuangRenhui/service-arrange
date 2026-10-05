@@ -55,4 +55,9 @@ public @interface CellType {
     public static final String OPERATOR_HTTP = "node_outer_http";
     public static final String OPERATOR_DUBBO = "node_outer_dubbo";
     public static final String OPERATOR_WEBSERVICE = "node_outer_webservice";
+    public static final String OPERATOR_SQL = "node_outer_sql";
+    /**
+     * 前端画布上的统一算子节点，真正类型在 data.opType / data.cellType
+     */
+    public static final String NODE_OP = "node_op";
 }

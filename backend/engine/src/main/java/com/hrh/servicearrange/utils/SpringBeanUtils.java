@@ -32,4 +32,11 @@ public class SpringBeanUtils implements ApplicationContextAware {
     public static Object getBean(String beanName) {
         return applicationContext.getBean(beanName);
     }
+
+    public static Object getBeanOrNull(String beanName) {
+        if (applicationContext == null || beanName == null || !applicationContext.containsBean(beanName)) {
+            return null;
+        }
+        return applicationContext.getBean(beanName);
+    }
 }
