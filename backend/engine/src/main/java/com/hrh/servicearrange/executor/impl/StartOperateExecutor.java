@@ -55,6 +55,12 @@ public class StartOperateExecutor implements Execute {
     public void getDataByNodeIds(Task task, Inst inst, TaskDao taskDao, String inputs, JSONObject pouts) {
         String[] id1s = StrUtil.subBetweenAll(inputs, "#pno_", "$");
         String[] id2s = StrUtil.subBetweenAll(inputs, "#header_", "$");
+        if (id1s == null) {
+            id1s = new String[0];
+        }
+        if (id2s == null) {
+            id2s = new String[0];
+        }
         Set<String> nodeIds = Stream.of(id1s).collect(Collectors.toSet());
         nodeIds.addAll(Stream.of(id2s).filter(s -> !StringUtils.isEmpty(s)).collect(Collectors.toSet()));
         List<Task> tasks = taskDao.findAllByInstIdAndNodeIdIn(task.getInstId(), nodeIds);

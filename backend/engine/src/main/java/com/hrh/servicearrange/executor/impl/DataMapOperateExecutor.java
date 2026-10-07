@@ -44,6 +44,11 @@ public class DataMapOperateExecutor implements Execute {
         pouts.set("staticParams", inst.getStaticParams());
         pouts.set("dynamicParams", inst.getDynamicParams());
         Task startTask = taskDao.findStartTask(task.getInstId(), CellType.START);
+        if (startTask == null) {
+            task.setState(Task.STATE_FAIL);
+            instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, "找不到开始节点任务，无法做数据映射"));
+            return task;
+        }
         pouts.set(startTask.getId(), startTask.getOutputs());
         //获取所有id的数据
         startOperateExecutor.getDataByNodeIds(task, inst, taskDao, inputs, pouts);
@@ -84,7 +89,8 @@ public class DataMapOperateExecutor implements Execute {
             //}
             if (!StringUtils.isEmpty(cin.getReqBodyOther())) {
                 JSONObject jsonSchemaObj = JSONUtil.parseObj(cin.getReqBodyOther());
-                JSONObject properties = jsonObject.getJSONObject("properties");
+                JSONObject properties = jsonSchemaObj.getJSONObject("properties");
+                if (properties != null) {
                 properties.keySet().stream().forEach(key -> {
                     JSONObject obj = properties.getJSONObject(key);
                     Object type = obj.get("type");
@@ -101,6 +107,7 @@ public class DataMapOperateExecutor implements Execute {
                 });
                 jsonSchemaObj.set("properties", properties);
                 cin.setReqBodyOther(JSONUtil.toJsonStr(jsonSchemaObj));
+                }
             }
             task.getOutputs().setValue(JSONUtil.toJsonStr(cin));
         }
@@ -111,8 +118,14 @@ public class DataMapOperateExecutor implements Execute {
     //处理多重对象嵌套
     private void doNextProperties(JSONObject jsonSchemaObj, String startId, JSONObject pouts, Task task, InstLogDao instLogDao) {
         JSONObject properties = jsonSchemaObj.getJSONObject("properties");
+        if (properties == null) {
+            return;
+        }
         properties.keySet().stream().forEach(key -> {
             JSONObject obj = properties.getJSONObject(key);
+            if (obj == null) {
+                return;
+            }
             Object type = obj.get("type");
             Object value = obj.get("defaultValue");
             String jsonpathMapping = obj.containsKey("jsonpathMapping") && !StringUtils.isEmpty(obj.getStr("jsonpathMapping")) ? obj.getStr("jsonpathMapping") : null;
@@ -224,12 +237,17 @@ public class DataMapOperateExecutor implements Execute {
         }).collect(Collectors.joining());
         JavaScriptEngine jse = JavaScriptEngine.instance();
         try {
+            if (valueExp == null || !valueExp.matches("[0-9.\\s+\\-*/()]+")) {
+                instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, "拒绝执行非算术映射表达式"));
+                return null;
+            }
             jse.eval("var obj=" + valueExp);
+            value = jse.get("obj");
         } catch (Exception e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
+            value = null;
         }
-        value = jse.get("obj");
         return value;
     }
 
@@ -280,7 +298,7 @@ public class DataMapOperateExecutor implements Execute {
                 //对象
                 JSON json = JSONUtil.parse(r.getValue());
                 JSONObject jsonObject = JSONUtil.parseObj(r.getValue());
-                if (jsonObject.equals(expression)) {
+                if (jsonObject.containsKey(expression)) {
                     value = jsonObject.get(expression);
                 } else {
                     //多重数组计算：#pno_id$features[i].obj[j].name
@@ -307,7 +325,7 @@ public class DataMapOperateExecutor implements Execute {
                                 JSONArray expressionArr = JSONUtil.parseArray(expressionArrayObj);
                                 int idxInt = Integer.valueOf(idxStr);
                                 //判断索引是否越界
-                                if (idxInt > expressionArr.size()) {
+                                if (idxInt < 0 || idxInt >= expressionArr.size()) {
                                     String erroMsg = "下标越界！请检查获取条件：" + jsonpathMapping + "; " + expression;
                                     instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, erroMsg));
                                     task.setState(Task.STATE_FAIL);
@@ -333,16 +351,16 @@ public class DataMapOperateExecutor implements Execute {
             List<KeyValueDto> staticParams = JSONUtil.toList(pouts.getJSONArray("staticParams"), KeyValueDto.class);
             if (staticParams != null) {
                 String expression = jsonpathMapping.startsWith("#staticParams_") ? jsonpathMapping.replace("#staticParams_$", "") : jsonpathMapping.replace("#staticParams$", "");
-                KeyValueDto keyValueDto = staticParams.stream().filter(dto -> dto.getKey().equals(expression)).findFirst().get();
-                value = keyValueDto.getValue();
+                KeyValueDto keyValueDto = staticParams.stream().filter(dto -> dto.getKey() != null && dto.getKey().equals(expression)).findFirst().orElse(null);
+                value = keyValueDto == null ? null : keyValueDto.getValue();
             }
         } else if (jsonpathMapping.startsWith("#dynamicParams")) {
             //处理全局动态参数
             List<KeyValueDto> dynamicParams = JSONUtil.toList(pouts.getJSONArray("dynamicParams"), KeyValueDto.class);
             if (dynamicParams != null) {
                 String expression = jsonpathMapping.startsWith("#dynamicParams_") ? jsonpathMapping.replace("#dynamicParams_$", "") : jsonpathMapping.replace("#dynamicParams$", "");
-                KeyValueDto keyValueDto = dynamicParams.stream().filter(dto -> dto.getKey().equals(expression)).findFirst().get();
-                value = keyValueDto.getValue();
+                KeyValueDto keyValueDto = dynamicParams.stream().filter(dto -> dto.getKey() != null && dto.getKey().equals(expression)).findFirst().orElse(null);
+                value = keyValueDto == null ? null : keyValueDto.getValue();
             }
         }
         return value;

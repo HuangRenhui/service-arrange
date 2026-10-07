@@ -62,27 +62,43 @@ public class HttpTaskExecutor implements Execute {
             try {
                 String inputs = task.getInputs();
                 JSONObject jsonObject = JSONUtil.parseObj(inputs);
-                //请求类型
-                String requestType = jsonObject.get("requestType").toString();
-                String url = jsonObject.get("url").toString();
-                //url后面拼接参数
+                if (jsonObject.get("requestType") == null && jsonObject.get("requestMethod") != null) {
+                    jsonObject.set("requestType", jsonObject.get("requestMethod"));
+                }
+                if (jsonObject.get("url") == null) {
+                    if (jsonObject.get("serviceUrl") != null) {
+                        jsonObject.set("url", jsonObject.get("serviceUrl"));
+                    }
+                }
+                if (jsonObject.get("error") == null && jsonObject.get("errorno") != null) {
+                    jsonObject.set("error", jsonObject.get("errorno"));
+                }
+                String requestType = jsonObject.get("requestType") == null ? "GET" : jsonObject.get("requestType").toString();
+                String url = jsonObject.get("url") == null ? "" : jsonObject.get("url").toString();
                 StringBuilder inPathParamUrl = new StringBuilder();
                 inPathParamUrl.append(url);
-                //入参数据：body、header
                 JSONObject input = jsonObject.getJSONObject("input");
-                //body
+                if (input == null) {
+                    input = jsonObject.getJSONObject("inputs");
+                }
+                if (input == null) {
+                    input = jsonObject;
+                }
                 Map<String, String> inBodyParam = null;
-                //header
                 Map<String, String> inHeaderParam = new HashMap<>();
-                //入参数据转换为具体对象，容易解析获取
                 Inputs data = JSONUtil.toBean(input, Inputs.class);
-                //url path参数
+                if (data == null) {
+                    data = new Inputs();
+                }
                 if (input.containsKey("reqQuery")) {
                     List<KeyValueDto> reqQuery = data.getReqQuery();
                     //参数有值标识符
                     long paramCount = reqQuery == null ? 0 : reqQuery.stream().filter(bean -> bean.getValue() != null).count();
                     if (paramCount > 0) {
-                        inPathParamUrl.append("?").append(reqQuery.stream().map(bean -> bean.getKey() + "=" + bean.getValue()).collect(Collectors.toList()).stream().collect(Collectors.joining("&")));
+                        inPathParamUrl.append("?").append(reqQuery.stream()
+                                .filter(bean -> bean.getValue() != null)
+                                .map(bean -> encodeQuery(bean.getKey()) + "=" + encodeQuery(String.valueOf(bean.getValue())))
+                                .collect(Collectors.joining("&")));
                     }
                 }
                 //body参数处理，处理非文件参数，文件在后面进行处理
@@ -218,17 +234,34 @@ public class HttpTaskExecutor implements Execute {
                 }
                 e.printStackTrace();
             } finally {
-                //将缓存的本地文件进行删除
-                if(fileListMap!=null&&fileListMap.size()>0){
-                    fileListMap.entrySet().stream().forEach(k->fileListMap.get(k).stream().forEach(f->f.delete()));
+                if (fileListMap != null && !fileListMap.isEmpty()) {
+                    fileListMap.values().stream().filter(list -> list != null).forEach(list -> list.forEach(f -> {
+                        if (f != null) {
+                            f.delete();
+                        }
+                    }));
                 }
             }
         }
         return task;
     }
 
+    private String encodeQuery(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        try {
+            return java.net.URLEncoder.encode(raw, "UTF-8");
+        } catch (Exception e) {
+            return raw;
+        }
+    }
+
     private Method getMethod(String requestType) {
         Method method = Method.GET;
+        if (requestType == null) {
+            return method;
+        }
         switch (requestType) {
             case "GET":
                 method = Method.GET;
