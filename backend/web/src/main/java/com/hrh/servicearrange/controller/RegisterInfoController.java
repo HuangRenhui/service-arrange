@@ -109,4 +109,8 @@ public class RegisterInfoController {
         return registerInfoService.findById(id);
     }
 
+    @RequestMapping(value = "/list")
+    public Object list() {
+        return com.hrh.servicearrange.vo.ApiResponse.ok(registerInfoService.findAll());
+    }
 }
