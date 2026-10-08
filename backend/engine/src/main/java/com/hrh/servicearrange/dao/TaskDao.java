@@ -18,6 +18,8 @@ public interface TaskDao extends MongoRepository<Task, String> {
 
     Task findByInstIdAndNodeIdAndLoopTimes(String instId, String nodeId, String loopTimes);
 
+    List<Task> findByInstId(String instId);
+
     @Query(value = "{ 'instId' : ?0 ,'type' : ?1 }")
     Task findStartTask(String instId, String type);
 }
