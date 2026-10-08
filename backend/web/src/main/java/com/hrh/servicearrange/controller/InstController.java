@@ -5,14 +5,18 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.hrh.servicearrange.config.OrchestrationProperties;
 import com.hrh.servicearrange.convert.StartTask;
 import com.hrh.servicearrange.dao.InstDao;
 import com.hrh.servicearrange.dao.TaskDao;
 import com.hrh.servicearrange.entity.Inst;
+import com.hrh.servicearrange.entity.Plan;
 import com.hrh.servicearrange.entity.Task;
 import com.hrh.servicearrange.mq.TaskProductor;
 import com.hrh.servicearrange.parser.DslParser;
 import com.hrh.servicearrange.utils.JsonSchemaUtil;
+import com.hrh.servicearrange.utils.TraceContext;
+import com.hrh.servicearrange.vo.ApiResponse;
 import com.hrh.servicearrange.vo.InstRunParamsVo;
 import com.hrh.servicearrange.vo.InstRunResponseVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +38,7 @@ import java.net.URLEncoder;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,6 +62,10 @@ public class InstController {
     private TaskDao taskDao;
     @Autowired
     private TaskProductor taskProductor;
+    @Autowired
+    private com.hrh.servicearrange.dao.PlanDao planDao;
+    @Autowired
+    private OrchestrationProperties orchestration;
 
     /**
      * @param planId   模型id
@@ -71,13 +80,11 @@ public class InstController {
         String contentType = null == request.getContentType() ? "null" : request.getContentType();
 
         StandardMultipartHttpServletRequest standardMultipartHttpServletRequest = null;
-        if (contentType.contains("multipart/form-data")) {
+        if (contentType.contains("multipart/form-data") && request instanceof StandardMultipartHttpServletRequest) {
             standardMultipartHttpServletRequest = (StandardMultipartHttpServletRequest) request;
-        } else {
-//            throw new RuntimeException("请以ContentType=multipart/form-data进行POST提交！当前ContentType=" + contentType);
         }
         InstRunParamsVo instRunParamsVo = new InstRunParamsVo();
-        String dslStr = FileUtil.readUtf8String("hrh_http.json");
+        String dslStr = loadDsl(planId);
         instRunParamsVo.setDsl(dslStr);
         //添加头信息
         Enumeration<String> headerNames = request.getHeaderNames();
@@ -99,33 +106,7 @@ public class InstController {
             String name = e.getKey();
             String value = e.getValue();
             if (dslStartParamsTypeMap.containsKey(name)) {
-                switch (dslStartParamsTypeMap.get(name)) {
-                    case "text":
-                    case "String":
-                        paramObj.set(name, value);
-                        break;
-                    case "jsonArrStr":
-                    case "array":
-                        JSONArray array = StringUtils.isEmpty(value) ? null : JSONUtil.parseArray(value, JsonSchemaUtil.jsonConfig);
-                        paramObj.set(name, array);
-                        break;
-                    case "number":
-                        Long number = StringUtils.isEmpty(value) ? 0 : Long.valueOf(value);
-                        paramObj.set(name, number);
-                        break;
-                    case "boolean":
-                        Boolean booleant = StringUtils.isEmpty(value) ? false : Boolean.valueOf(value);
-                        paramObj.set(name, booleant);
-                        break;
-                    case "object":
-                    case "jsonObjStr":
-                        JSONObject jsonObject = StringUtils.isEmpty(value) ? null : JSONUtil.parseObj(value, JsonSchemaUtil.jsonConfig);
-                        paramObj.set(name, jsonObject);
-                        break;
-                    default:
-                        break;
-
-                }
+                putTypedParam(paramObj, name, value, dslStartParamsTypeMap.get(name));
             } else {
                 paramObj.set(name, value);
             }
@@ -133,11 +114,38 @@ public class InstController {
         instRunParamsVo.setInstName(paramObj.getStr("servea_instName"));
         instRunParamsVo.setSync(paramObj.containsKey("servea_sync") ? paramObj.getBool("servea_sync") : true);
         instRunParamsVo.setOptType(paramObj.containsKey("servea_optType") ? paramObj.getStr("servea_optType") : "run");
-        //处理请求的文件
+        String idempotencyKey = firstHeader(headerParams, "x-idempotency-key");
+        if (StringUtils.isEmpty(idempotencyKey)) {
+            idempotencyKey = paramObj.getStr("servea_idempotencyKey");
+        }
+        if (!StringUtils.isEmpty(idempotencyKey) && !"get_result".equalsIgnoreCase(instRunParamsVo.getOptType())) {
+            Inst existed = instDao.findFirstByPlanIdAndIdempotencyKeyOrderByCreateDateDesc(planId, idempotencyKey);
+            if (existed != null && !Inst.STATE_FAIL.equals(existed.getState())
+                    && !Inst.STATE_CANCEL.equals(existed.getState())) {
+                return runAck(existed, true);
+            }
+        }
+        if ("get_result".equalsIgnoreCase(instRunParamsVo.getOptType())) {
+            String queryId = paramObj.getStr("servea_instId");
+            if (StringUtils.isEmpty(queryId)) {
+                throw new IllegalArgumentException("get_result 需要 servea_instId");
+            }
+            Inst resultInst = instDao.findById(queryId).orElse(null);
+            if (resultInst == null) {
+                throw new IllegalArgumentException("实例不存在：" + queryId);
+            }
+            if (!Inst.STATE_SUCCESS.equals(resultInst.getState())) {
+                throw new IllegalArgumentException("实例还未运行成功，无输出信息！");
+            }
+            return writeOutputs(resultInst, response);
+        }
         if(null!=standardMultipartHttpServletRequest) {
             MultiValueMap<String, MultipartFile> multiFiles = standardMultipartHttpServletRequest.getMultiFileMap();
             multiFiles.keySet().stream().forEach(fileKey -> {
                 MultipartFile mFile = multiFiles.getFirst(fileKey);
+                if (mFile == null) {
+                    return;
+                }
                 String originalFilename = mFile.getOriginalFilename();
                 int size = Long.valueOf(mFile.getSize()).intValue();
                 //进行文件保存
@@ -155,6 +163,14 @@ public class InstController {
         inst.setCreateDate(date);
         inst.setModifyDate(date);
         inst.setHeaderParams(headerParams);
+        inst.setTraceId(TraceContext.getOrCreate());
+        inst.setIdempotencyKey(idempotencyKey);
+        inst.setCallerApp(firstHeader(headerParams, "x-caller-app"));
+        Plan planMeta = planDao.findById(planId).orElse(null);
+        if (planMeta != null) {
+            inst.setPlanVersion(planMeta.getVersion());
+            inst.setEnv(planMeta.getEnv());
+        }
         instDao.save(inst);
         //返回实例运行结果
         InstRunResponseVo responseVo = new InstRunResponseVo();
@@ -166,71 +182,148 @@ public class InstController {
             inst.setState(Inst.STATE_RUNNING);
             instDao.save(inst);
             //从虚拟开始节点运行
-            String startId = inst.getRoots().stream().findFirst().get();
+            String startId = inst.getRoots() == null ? null : inst.getRoots().stream().findFirst().orElse(null);
+            if (startId == null || inst.getNodeMap() == null || inst.getNodeMap().get(startId) == null) {
+                throw new IllegalArgumentException("DSL 缺少可用的开始节点");
+            }
             Task task = startTask.convert(inst.getNodeMap().get(startId), inst);
             taskDao.save(task);
             //mq发送开始运行
             taskProductor.sendTaskResult(task);
         }
-        boolean returnOutPuts = false;
-        //设置实例运行返回结果的状态
         responseVo.setState(inst.getState());
-        if (instRunParamsVo.getOptType().equalsIgnoreCase("get_result")) {
-            Inst stateInst = instDao.findStateById(inst.getId());
-            if (!Inst.STATE_SUCCESS.equals(stateInst.getState())) {
-                throw new RuntimeException("实例还未运行成功，无输出信息！");
-            } else {
-                returnOutPuts = true;
-            }
-        }
-        Object respResult = inst.getId();
-        if (returnOutPuts) {
-            responseVo.setState(Inst.STATE_SUCCESS);
-            Inst resultInst = instDao.findOutputsById(inst.getId());
-            Task.Result outputs = resultInst.getOutputs();
-            //设置请求返回结果
-            if (outputs != null) {
-                responseVo.getOutputs().setContentType(outputs.getContentType());
-                responseVo.getOutputs().setHeaderParams(outputs.getHeaderParams());
-                responseVo.getOutputs().setJsonSchema(outputs.getJsonSchema());
-                response.setCharacterEncoding("UTF-8");
-                if (!StringUtils.isEmpty(outputs.getContentType()) && (outputs.getContentType().equals("application/json") || outputs.getContentType().equals("text/plain"))) {
-                    if (outputs.getContentType().equals("application/json")) {
-                        if (JSONUtil.isJsonObj(outputs.getValue())) {
-                            respResult = JSONUtil.parseObj(outputs.getValue());
-                        } else if (JSONUtil.isJsonArray(outputs.getValue())) {
-                            respResult = JSONUtil.parseArray(outputs.getValue());
-                        } else {
-                            respResult = outputs.getValue();
-                        }
-                        response.setContentType(outputs.getContentType());
-                    }
-                } else {
-                    //文件
-                    InputStream inputStream = null;
-                    OutputStream outputStream = null;
-                    String fileName = null;
-                    String filePath = outputs.getValue();
-                    if (filePath.startsWith("filemgr://")) {
-                        fileName = FileUtil.getName(filePath);
-                    }
-                    response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));
-                    if (StringUtils.isEmpty(outputs.getContentType())) {
-                        response.setContentType("application/octet-stream");
+        return runAck(inst, false);
+    }
+
+    private Object writeOutputs(Inst resultInst, HttpServletResponse response) throws Exception {
+        InstRunResponseVo responseVo = new InstRunResponseVo();
+        responseVo.setState(Inst.STATE_SUCCESS);
+        Task.Result outputs = resultInst.getOutputs();
+        Object respResult = resultInst.getId();
+        if (outputs != null) {
+            responseVo.getOutputs().setContentType(outputs.getContentType());
+            responseVo.getOutputs().setHeaderParams(outputs.getHeaderParams());
+            responseVo.getOutputs().setJsonSchema(outputs.getJsonSchema());
+            response.setCharacterEncoding("UTF-8");
+            if (!StringUtils.isEmpty(outputs.getContentType()) && (outputs.getContentType().equals("application/json") || outputs.getContentType().equals("text/plain"))) {
+                if (outputs.getContentType().equals("application/json")) {
+                    if (JSONUtil.isJsonObj(outputs.getValue())) {
+                        respResult = JSONUtil.parseObj(outputs.getValue());
+                    } else if (JSONUtil.isJsonArray(outputs.getValue())) {
+                        respResult = JSONUtil.parseArray(outputs.getValue());
                     } else {
-                        response.setContentType(outputs.getContentType());
+                        respResult = outputs.getValue();
                     }
-                    response.setCharacterEncoding("UTF-8");
-                    if (filePath.startsWith("filemgr://")) {
-                        //文件下载
-                        //获取文件inputStream流
-                        //OutputStream流输出：write、flush
-                        //关闭流
-                    }
+                    response.setContentType(outputs.getContentType());
                 }
+            } else {
+                String fileName = "download";
+                String filePath = outputs.getValue();
+                if (!StringUtils.isEmpty(filePath) && filePath.startsWith("filemgr://")) {
+                    fileName = FileUtil.getName(filePath);
+                }
+                response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));
+                if (StringUtils.isEmpty(outputs.getContentType())) {
+                    response.setContentType("application/octet-stream");
+                } else {
+                    response.setContentType(outputs.getContentType());
+                }
+                response.setCharacterEncoding("UTF-8");
             }
         }
         return respResult;
+    }
+
+    private void putTypedParam(JSONObject paramObj, String name, String value, String type) {
+        try {
+            switch (type) {
+                case "text":
+                case "String":
+                    paramObj.set(name, value);
+                    break;
+                case "jsonArrStr":
+                case "array":
+                    paramObj.set(name, StringUtils.isEmpty(value) ? null : JSONUtil.parseArray(value, JsonSchemaUtil.jsonConfig));
+                    break;
+                case "number":
+                    paramObj.set(name, StringUtils.isEmpty(value) ? 0 : Long.valueOf(value));
+                    break;
+                case "boolean":
+                    paramObj.set(name, !StringUtils.isEmpty(value) && Boolean.parseBoolean(value));
+                    break;
+                case "object":
+                case "jsonObjStr":
+                    paramObj.set(name, StringUtils.isEmpty(value) ? null : JSONUtil.parseObj(value, JsonSchemaUtil.jsonConfig));
+                    break;
+                default:
+                    paramObj.set(name, value);
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("参数 " + name + " 无法按类型 " + type + " 转换：" + e.getMessage());
+        }
+    }
+
+    private String loadDsl(String planId) {
+        if (StrUtil.isNotEmpty(planId) && planDao != null) {
+            Plan fromDb = planDao.findById(planId).orElse(null);
+            if (fromDb != null && StrUtil.isNotEmpty(fromDb.getDsl())) {
+                if (Plan.STATUS_DISABLED.equals(fromDb.getStatus())) {
+                    throw new IllegalArgumentException("流程已停用，无法运行");
+                }
+                if (orchestration != null && orchestration.isRequirePublished()
+                        && !Plan.STATUS_PUBLISHED.equals(fromDb.getStatus())) {
+                    throw new IllegalArgumentException("仅允许运行已发布流程，当前状态=" + fromDb.getStatus());
+                }
+                return fromDb.getDsl();
+            }
+        }
+        if (orchestration != null && orchestration.isRequirePublished()) {
+            throw new IllegalArgumentException("未找到已发布流程，planId=" + planId);
+        }
+        java.util.List<String> candidates = new java.util.ArrayList<>();
+        if (StrUtil.isNotEmpty(planId)) {
+            candidates.add(planId);
+            if (!planId.endsWith(".json")) {
+                candidates.add(planId + ".json");
+                candidates.add("hrh_" + planId + ".json");
+            }
+        }
+        candidates.add("hrh_http.json");
+        for (String name : candidates) {
+            try {
+                org.springframework.core.io.ClassPathResource res = new org.springframework.core.io.ClassPathResource(name);
+                if (res.exists()) {
+                    return cn.hutool.core.io.IoUtil.readUtf8(res.getInputStream());
+                }
+            } catch (Exception ignored) {
+            }
+            if (FileUtil.exist(name)) {
+                return FileUtil.readUtf8String(name);
+            }
+        }
+        throw new IllegalArgumentException("找不到流程 DSL，planId=" + planId);
+    }
+
+    private Map<String, Object> runAck(Inst inst, boolean idempotentHit) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id", inst.getId());
+        data.put("state", inst.getState());
+        data.put("traceId", inst.getTraceId());
+        data.put("planVersion", inst.getPlanVersion());
+        data.put("idempotentHit", idempotentHit);
+        return ApiResponse.ok(data);
+    }
+
+    private String firstHeader(Map<String, String> headers, String name) {
+        if (headers == null || StringUtils.isEmpty(name)) {
+            return null;
+        }
+        for (Map.Entry<String, String> e : headers.entrySet()) {
+            if (e.getKey() != null && e.getKey().equalsIgnoreCase(name)) {
+                return e.getValue();
+            }
+        }
+        return null;
     }
 
     //处理请求的body参数值
@@ -238,30 +331,10 @@ public class InstController {
         Map<String, String> formDataBody = new HashMap<>();
         System.out.println(request.getContentType());
         //请求form-data空
-        if (request.getContentType() == null) {
+        if (request.getContentType() == null || request.getParameterMap() != null) {
             if (request.getParameterMap() != null) {
-                request.getParameterMap().entrySet().stream().forEach(e -> {
-                    formDataBody.put(e.getKey(), Stream.of(e.getValue()).collect(Collectors.joining(",")));
-                });
+                request.getParameterMap().forEach((k, v) -> formDataBody.put(k, Stream.of(v).collect(Collectors.joining(","))));
             }
-            //请求form-data有值
-        } else if ("multipart/form-data".equals(request.getContentType())) {
-            String formDataAll = new String(readInputStream(request.getInputStream()), "UTF-8");
-            if (!StringUtils.isEmpty(formDataAll)) {
-                String[] formDataArr = formDataAll.split("Content-Disposition");
-                for (int i = 0; i < formDataArr.length; i++) {
-                    String formDataTmp = formDataArr[i];
-                    if (formDataTmp.contains("form-data;") && !formDataTmp.contains("filename=\"") && !formDataTmp.contains("Content-Type:")) {
-                        String[] formDataTmpArr = formDataTmp.split("\r");
-                        String name = StrUtil.subBetween(formDataTmpArr[0], "name=\"", "\"");
-                        String value = StrUtil.trim(formDataTmpArr[formDataTmpArr.length - 3], 0);
-                        formDataBody.put(name, value);
-                    }
-                }
-            }
-            //请求form-data有值和包含文件流
-        } else if (request.getContentType().contains("multipart/form-data") && request.getContentType().contains("boundary")) {
-            request.getParameterMap().entrySet().stream().forEach(e -> formDataBody.put(e.getKey(), Stream.of(e.getValue()).collect(Collectors.joining(","))));
         }
         return formDataBody;
     }

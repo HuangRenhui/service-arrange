@@ -4,6 +4,8 @@ import com.hrh.servicearrange.dsl.Cell;
 import com.hrh.servicearrange.dsl.Group;
 import com.hrh.servicearrange.dsl.KeyValueDto;
 import org.springframework.data.annotation.Transient;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -16,6 +18,9 @@ import java.util.*;
  * @flow
  */
 @Document(collection = Inst.TABLE_NAME)
+@CompoundIndexes({
+        @CompoundIndex(name = "idx_plan_idempotency", def = "{'planId': 1, 'idempotencyKey': 1}")
+})
 public class Inst extends BaseEntity implements Serializable {
 
     public static final String TABLE_NAME = "SERVEA_INST";
@@ -61,6 +66,11 @@ public class Inst extends BaseEntity implements Serializable {
      */
     @Transient
     public static final String STATE_RESUME = "RESUME";
+    /**
+     * 实例状态：取消，后续节点不再调度。
+     */
+    @Transient
+    public static final String STATE_CANCEL = "CANCEL";
 
     /**
      * 模型id，当模型创建完根据模型id来运行模型生成实例
@@ -193,6 +203,19 @@ public class Inst extends BaseEntity implements Serializable {
      */
     @Field("loopRunTimesMap")
     private Map<String, NodeLoopInfo> loopRunTimesMap = new HashMap<>();
+    @Field("traceId")
+    private String traceId;
+    @Field("idempotencyKey")
+    private String idempotencyKey;
+    @Field("failReason")
+    private String failReason;
+    @Field("planVersion")
+    private Integer planVersion;
+    @Field("env")
+    private String env;
+    @Field("callerApp")
+    private String callerApp;
+
     public String getPlanId() {
         return planId;
     }
@@ -399,5 +422,53 @@ public class Inst extends BaseEntity implements Serializable {
 
     public void setLoopRunTimesMap(Map<String, NodeLoopInfo> loopRunTimesMap) {
         this.loopRunTimesMap = loopRunTimesMap;
+    }
+
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public String getFailReason() {
+        return failReason;
+    }
+
+    public void setFailReason(String failReason) {
+        this.failReason = failReason;
+    }
+
+    public Integer getPlanVersion() {
+        return planVersion;
+    }
+
+    public void setPlanVersion(Integer planVersion) {
+        this.planVersion = planVersion;
+    }
+
+    public String getEnv() {
+        return env;
+    }
+
+    public void setEnv(String env) {
+        this.env = env;
+    }
+
+    public String getCallerApp() {
+        return callerApp;
+    }
+
+    public void setCallerApp(String callerApp) {
+        this.callerApp = callerApp;
     }
 }
