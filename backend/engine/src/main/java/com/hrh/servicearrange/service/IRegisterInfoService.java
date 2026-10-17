@@ -34,5 +34,5 @@ public interface IRegisterInfoService {
      */
     Object findById(String id);
 
-
+    java.util.List<RegisterInfoEntity> findAll();
 }

@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -46,6 +47,12 @@ public class TaskServiceImpl implements ITaskService {
     @Override
     public Boolean edgeDecisionDo(String startId, String instId, String exp, String[] R, String[] L, List<EdgeDecisionCell.ConditionData> conditionData, Task task) {
         Boolean result = false;
+        if (R == null) {
+            R = new String[0];
+        }
+        if (L == null) {
+            L = new String[0];
+        }
         JSONObject pouts = JSONUtil.createObj();
         Set<String> nodeIds = new HashSet<>();
         nodeIds.add(startId);
@@ -60,6 +67,9 @@ public class TaskServiceImpl implements ITaskService {
             Stream.of(id2s).forEach(i -> nodeIds.add(i));
         }
         Inst inst = instDao.findById(instId).orElse(null);
+        if (inst == null) {
+            return false;
+        }
         List<Task> taskList = taskDao.findAllByInstIdAndNodeIdIn(instId, nodeIds);
         if (null != taskList && taskList.size() > 0) {
             taskList.stream().forEach(t -> {
@@ -99,7 +109,9 @@ public class TaskServiceImpl implements ITaskService {
             }
         }
         for (int i = 0; i < R_Values.size(); i++) {
-            if (null != conditionData && conditionData.get(i).getType().trim().toLowerCase().equals("string")) {
+            if (null != conditionData && i < conditionData.size() && conditionData.get(i) != null
+                    && conditionData.get(i).getType() != null
+                    && "string".equals(conditionData.get(i).getType().trim().toLowerCase())) {
                 exp = exp.replace("R" + i, "'" + R_Values.get(i) + "'");
             } else {
                 exp = exp.replace("R" + i, R_Values.get(i));
@@ -120,16 +132,21 @@ public class TaskServiceImpl implements ITaskService {
                             loopTimes = near.getLoopEdgeId() + "|" + near.getTimes();
                         }
                         Task t = taskDao.findByInstIdAndNodeIdAndLoopTimes(instId, newNodeId, loopTimes);
+                        if (t == null) {
+                            continue;
+                        }
                         pouts.set(t.getNodeId(), t.getOutputs());
                         Object value = dataMapOperateExecutor.valueCompute(startId, nodeExpr, pouts, task, instLogDao);
-                        L[i] = L[i].replace(nodeExpr, value.toString());
+                        if (value != null) {
+                            L[i] = L[i].replace(nodeExpr, value.toString());
+                        }
                     }
                 }
             }
         }
         for (int i = 0; i < L.length; i++) {
             if (null == L[i]) {
-                if (null != conditionData && conditionData.get(i).getType().equals("string")) {
+                if (null != conditionData && i < conditionData.size() && conditionData.get(i) != null && "string".equals(conditionData.get(i).getType())) {
                     exp = exp.replace("L" + i, "'null'");
                 } else {
                     exp = exp.replace("L" + i, "null");
@@ -141,13 +158,13 @@ public class TaskServiceImpl implements ITaskService {
                 } catch (Exception e2) {
                 }
                 if (null != tmp) {
-                    if (null != conditionData && conditionData.get(i).getType().equals("string")) {
+                    if (null != conditionData && i < conditionData.size() && conditionData.get(i) != null && "string".equals(conditionData.get(i).getType())) {
                         exp = exp.replace("L" + i, "'" + tmp.toString() + "'");
                     } else {
                         exp = exp.replace("L" + i, tmp.toString());
                     }
                 } else {
-                    if (null != conditionData && conditionData.get(i).getType().equals("string")) {
+                    if (null != conditionData && i < conditionData.size() && conditionData.get(i) != null && "string".equals(conditionData.get(i).getType())) {
                         exp = exp.replace("L" + i, "'" + L[i] + "'");
                     } else {
                         exp = exp.replace("L" + i, L[i]);
@@ -155,9 +172,16 @@ public class TaskServiceImpl implements ITaskService {
                 }
             }
         }
-        ExpressionParser parser = new SpelExpressionParser();
-        Expression expression = parser.parseExpression(exp);
-        result = (Boolean) expression.getValue();
+        if (StrUtil.isEmpty(exp)) {
+            return false;
+        }
+        try {
+            ExpressionParser parser = new SpelExpressionParser();
+            Expression expression = parser.parseExpression(exp);
+            result = Boolean.TRUE.equals(expression.getValue(SimpleEvaluationContext.forReadOnlyDataBinding().build(), Boolean.class));
+        } catch (Exception e) {
+            return false;
+        }
 
         return result;
     }

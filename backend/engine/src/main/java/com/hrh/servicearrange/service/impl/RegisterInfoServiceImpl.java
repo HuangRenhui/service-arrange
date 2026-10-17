@@ -67,5 +67,8 @@ public class RegisterInfoServiceImpl implements IRegisterInfoService {
         return null;
     }
 
-
+    @Override
+    public List<RegisterInfoEntity> findAll() {
+        return registerInfoDao.findAll();
+    }
 }
