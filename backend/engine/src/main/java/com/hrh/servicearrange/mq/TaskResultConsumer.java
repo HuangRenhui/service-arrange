@@ -11,6 +11,7 @@ import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.hrh.servicearrange.config.BackpressureProperties;
+import com.hrh.servicearrange.config.OrchestrationProperties;
 import com.hrh.servicearrange.convert.TaskInterface;
 import com.hrh.servicearrange.dao.InstDao;
 import com.hrh.servicearrange.dao.InstLogDao;
@@ -68,6 +69,8 @@ public class TaskResultConsumer {
 
     @Autowired
     private BackpressureProperties backpressure;
+    @Autowired
+    private OrchestrationProperties orchestration;
 
     @StreamListener(target = MqChannelProcessor.TASK_RESULT_INPUT)
     @RabbitHandler
@@ -108,7 +111,8 @@ public class TaskResultConsumer {
      */
     public void run(String id, String instId, String state, Task.Result outputs, Task.RetryRules retryRules, Channel channel, Long deliveryTag, String lockNode) {
         if (StringUtils.isEmpty(id) || StringUtils.isEmpty(instId) || StringUtils.isEmpty(state)) {
-            taskProductor.ackTask(deliveryTag, channel, "id/instId/state can't be null:id=" + id + ",instId=" + instId + ",state=" + state);
+            taskProductor.ackTask(instId, deliveryTag, channel,
+                    "id/instId/state can't be null:id=" + id + ",instId=" + instId + ",state=" + state, lockNode);
             return;
         }
         //下一个运行节点集合
@@ -116,25 +120,42 @@ public class TaskResultConsumer {
         //找到当前任务
         Task task = taskDao.findById(id).orElse(null);
         if (task == null) {
-            taskProductor.ackTask(instId, deliveryTag, channel, "do ack! task not find:" + id);
+            taskProductor.ackTask(instId, deliveryTag, channel, "do ack! task not find:" + id, lockNode);
             return;
         }
         Inst inst = instDao.findById(instId).orElse(null);
         if (inst == null) {
-            taskProductor.ackTask(instId, deliveryTag, channel, "do ack! inst not find:" + instId);
+            taskProductor.ackTask(instId, deliveryTag, channel, "do ack! inst not find:" + instId, lockNode);
             return;
         } else if (Inst.STATE_SUSPEND.equals(inst.getState())) {
             inst.getSuspendNodes().add(task.getNodeName() + "|" + task.getLoopTimes());
             instDao.save(inst);
-            taskProductor.ackTask(instId, deliveryTag, channel, "do ack! inst is suspend:" + instId);
+            taskProductor.ackTask(instId, deliveryTag, channel, "do ack! inst is suspend:" + instId, lockNode);
+            return;
+        } else if (Inst.STATE_CANCEL.equals(inst.getState())) {
+            taskProductor.ackTask(instId, deliveryTag, channel, "do ack! inst is cancel:" + instId, lockNode);
             return;
         }
         //重试次数超过上限，强制 ack 丢弃，避免毒消息永久占用消费线程
         if (task.getStateNackTimes() != null && task.getStateNackTimes() >= backpressure.getMaxHandleTimes()) {
-            taskProductor.ackTask(instId, deliveryTag, channel, "stateNackTimes>=" + backpressure.getMaxHandleTimes() + ",this message may never be ack,force ack this message");
+            taskProductor.ackTask(instId, deliveryTag, channel, "stateNackTimes>=" + backpressure.getMaxHandleTimes() + ",this message may never be ack,force ack this message", lockNode);
             return;
         }
         task.setEndDate(new Date());
+        if (state.equals(Task.STATE_FAIL) && canRetry(retryRules)) {
+            int done = retryRules.getDoneTimes() == null ? 0 : retryRules.getDoneTimes();
+            retryRules.setDoneTimes(done + 1);
+            task.setRetryRules(retryRules);
+            task.setState(Task.STATE_WAITE);
+            task.setStartDate(new Date());
+            taskDao.save(task);
+            instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
+                    InstLog.LEVEL_WARN, "任务失败，第 " + retryRules.getDoneTimes() + " 次重试"));
+            sleepQuietly(retryDelayMs(retryRules));
+            taskProductor.sendTaskRun(task);
+            taskProductor.ackTask(instId, deliveryTag, channel, "do retry node:" + task.getNodeId(), lockNode);
+            return;
+        }
         if (state.equals(Task.STATE_SKIP)) {
             inst.getSkipNodes().add(task.getNodeId());
         } else if (state.equals(Task.STATE_SUCCESS)) {
@@ -142,6 +163,8 @@ public class TaskResultConsumer {
         } else if (state.equals(Task.STATE_FAIL)) {
             inst.getFailNodes().add(task.getNodeId());
             inst.setState(Inst.STATE_FAIL);
+            inst.setFailReason((task.getNodeName() == null ? task.getNodeId() : task.getNodeName()) + " failed");
+            inst.setEndDate(new Date());
         }
         instDao.save(inst);
         task.setRetryRules(retryRules);
@@ -169,26 +192,23 @@ public class TaskResultConsumer {
             List<Cell> compensateEdges = null;
             List<Cell> outLoopEdges = null;
             if (outEdges != null && outEdges.size() > 0) {
-                //获取线节点，然后过滤获取强组合线节点信息
-                compensateEdges = outEdges.stream().map(e -> nodeMap.get(e)).filter(c -> c.getCellType().equals(CellType.EDGE_COMPENSATE)).collect(Collectors.toList());
-                outLoopEdges = outEdges.stream().map(e -> nodeMap.get(e)).filter(c -> c.getCellType().equals(CellType.EDGE_LOOP)).collect(Collectors.toList());
+                compensateEdges = outEdges.stream().map(nodeMap::get).filter(c -> c != null && CellType.EDGE_COMPENSATE.equals(c.getCellType())).collect(Collectors.toList());
+                outLoopEdges = outEdges.stream().map(nodeMap::get).filter(c -> c != null && CellType.EDGE_LOOP.equals(c.getCellType())).collect(Collectors.toList());
             }
             //任务失败，进行强组合节点回退
-            if (Task.STATE_FAIL.equals(state) && compensateEdges != null && compensateEdges.size() > 0) {
-                //获取最后的一个补偿节点：进行逆推
+            if (Task.STATE_FAIL.equals(state) && compensateEdges != null && compensateEdges.size() > 0
+                    && compensateEdges.get(0).getTarget() != null) {
                 String target = compensateEdges.get(0).getTarget().getCell();
                 Cell cell = nodeMap.get(target);
-                if (cell != null) {
-                    TaskInterface taskInterface = SpringUtil.getBean(cell.getCellType() + TaskType.suffix);
-                    //节点转换为任务
-                    Task t = taskInterface.convert(cell, inst);
+                Task t = convertCell(cell, inst);
+                if (t != null) {
                     t.setStartDate(new Date());
                     taskDao.deleteByInstIdAndNodeIdAndLoopTimes(instId, t.getNodeId(), t.getLoopTimes());
                     taskDao.save(t);
                     instDao.save(inst);
                     taskProductor.sendTaskRun(t);
-                    taskProductor.ackTask(instId, deliveryTag, channel, "do compensate -> node:");
                 }
+                taskProductor.ackTask(instId, deliveryTag, channel, "do compensate -> node:", lockNode);
                 return;
             }
             //任务跳过或成功，进行下一节点运行
@@ -198,67 +218,41 @@ public class TaskResultConsumer {
                     //循环线处理，doWhile，先执行节点再判断条件
                     if (outLoopEdges != null && outLoopEdges.size() > 0) {
                         EdgeLoopCell elc = JSONUtil.toBean(JSONUtil.parseObj(outLoopEdges.get(0)), EdgeLoopCell.class);
-                        //表达式
+                        if (elc.getData() != null) {
                         String exp = elc.getData().getJsonpathElexpression();
                         String[] R = elc.getData().getR();
                         String[] L = elc.getData().getL();
-                        String startId = roots.stream().findFirst().get();
-                        List<FunTransform2ObjCell.Data.TransformRule> transformRules = elc.getData().getTransformRules();
-                        //动态参数变化
                         EdgeLoopCell.CycleInfo cycleInfo = elc.getData().getCycleInfo();
                         if (cycleInfo != null && cycleInfo.getRule() != null) {
-                            String rule = cycleInfo.getRule();
-                            String stepLength = cycleInfo.getStepLength();
-                            String jsonpathSelect = cycleInfo.getJsonpathSelect().split("\\$")[1];
-                            List<KeyValueDto> dynamicParams = inst.getDynamicParams();
-                            int idx = 0;
-                            for (int i = 0; i < dynamicParams.size(); i++) {
-                                if (dynamicParams.get(i).getKey().equals(jsonpathSelect)) {
-                                    idx = i;
-                                }
-                            }
-                            String dynamicValue = dynamicParams.get(idx).getKey();
-                            String expressionCaculate = dynamicValue + rule + stepLength;
-                            ExpressionParser parser = new SpelExpressionParser();
-                            Expression expression = parser.parseExpression(expressionCaculate);
-                            Object value = expression.getValue();
-                            dynamicParams.get(idx).setValue(value);
-                            inst.setDynamicParams(dynamicParams);
-                            instDao.save(inst);
-                            //决策线判断
+                            applyCycleStep(inst, cycleInfo);
+                            String startId = firstRoot(roots);
                             Boolean flag = taskService.edgeLoopDecisionDo(startId, instId, exp, R, L, task);
-                            //获取循环线之间的节点
                             Set<String> cellIdsBetweenLoopEdge = DslParser.getCellIdsBetweenLoopEdge(inst, outLoopEdges.get(0));
-                            if (flag) {
-                                //进入循环
-                                NodeLoopInfo nodeLoopInfo = inst.getLoopRunTimesMap().get(outLoopEdges.get(0).getId());
-                                nodeLoopInfo.setTimes(nodeLoopInfo.getTimes() + 1);
-                                inst.getLoopRunTimesMap().put(outLoopEdges.get(0).getId(), nodeLoopInfo);
-                                //将循环线之间运行过的节点重新开始
+                            if (Boolean.TRUE.equals(flag) && bumpLoopTimes(inst, outLoopEdges.get(0).getId(), task)) {
                                 inst.getWaitingNodes().addAll(cellIdsBetweenLoopEdge);
                                 inst.getSuccessNodes().removeAll(cellIdsBetweenLoopEdge);
                                 successNodes.removeAll(cellIdsBetweenLoopEdge);
                                 inst.getFailNodes().removeAll(cellIdsBetweenLoopEdge);
                                 inst.getSkipNodes().removeAll(cellIdsBetweenLoopEdge);
                                 instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO, "本节点的输出循环线表达式成立，将循环线中间的节点设定为未执行：" + JSONUtil.toJsonStr(cellIdsBetweenLoopEdge)));
-                                //决策线下一节点：从头开始的头节点
-                                String target = elc.getTarget().getCell();
-                                Cell cell = inst.getNodeMap().get(target);
-                                if (!StringUtils.isEmpty(cell)) {
-                                    TaskInterface ti = SpringUtil.getBean(cell.getCellType() + TaskType.suffix);
-                                    Task next = ti.convert(cell, inst);
+                                String target = elc.getTarget() == null ? null : elc.getTarget().getCell();
+                                Cell cell = target == null ? null : inst.getNodeMap().get(target);
+                                Task next = convertCell(cell, inst);
+                                if (next != null) {
                                     next.setStartDate(new Date());
                                     taskDao.deleteByInstIdAndNodeIdAndLoopTimes(instId, next.getNodeId(), next.getLoopTimes());
                                     taskDao.save(next);
                                     taskProductor.sendTaskRun(next);
                                 }
+                                instDao.save(inst);
+                                taskProductor.ackTask(instId, deliveryTag, channel, "enter loop, do ack.", lockNode);
                                 return;
                             } else {
-                                //如果不进行循环，将循环线之间节点当作成功运行了
                                 inst.getWaitingNodes().removeAll(cellIdsBetweenLoopEdge);
                                 waitingNodes.removeAll(cellIdsBetweenLoopEdge);
                                 successNodes.addAll(cellIdsBetweenLoopEdge);
                             }
+                        }
                         }
                     }
                 }
@@ -272,10 +266,13 @@ public class TaskResultConsumer {
                         inst.setState(Inst.STATE_FAIL);
                     }
                     instDao.save(inst);
+                    taskProductor.ackTask(instId, deliveryTag, channel, "end node finished, do ack.", lockNode);
                     return;
                 }
-                //获取下一节点
-                nodeChildsMap.get(task.getNodeId()).stream().forEach(i -> finalNextIds.add(i));
+                Set<String> childIds = nodeChildsMap.get(task.getNodeId());
+                if (childIds != null) {
+                    childIds.forEach(finalNextIds::add);
+                }
                 List<String> whileDoNextIds = new ArrayList<>();
                 //判断后面节点是否有决策线，类型是whileDo，表示先判断条件再执行节点，且决策线不需要进行循环运行，那么当前节点就需要去除掉不运行了
                 //所以当前遍历需要从尾遍历，里面有remove操作
@@ -285,60 +282,38 @@ public class TaskResultConsumer {
                     Set<String> iiInputEdges = nodeInputEdgesMap.get(ii);
                     if (null != iiInputEdges && iiInputEdges.size() > 0) {
                         //获取whileDo的线
-                        List<Cell> inLoopWhileDoEdges = iiInputEdges.stream().map(e -> nodeMap.get(e)).filter(c -> {
-                            boolean b1 = c.getCellType().equals(CellType.EDGE_LOOP);
-                            //如果是循环线，判断线结构是不是存在whileDo逻辑
-                            if (b1) {
-                                EdgeLoopCell.Data data = JSONUtil.toBean(JSONUtil.toJsonStr(c.getData(), JsonSchemaUtil.jsonConfig), EdgeLoopCell.Data.class);
-                                boolean b2 = LoopType.WHILE_DO.equals(data.getCycleInfo().getType());
-                                return b1 && b2;
+                        List<Cell> inLoopWhileDoEdges = iiInputEdges.stream().map(nodeMap::get).filter(c -> {
+                            if (c == null || !CellType.EDGE_LOOP.equals(c.getCellType())) {
+                                return false;
                             }
-                            return b1;
+                            EdgeLoopCell.Data data = JSONUtil.toBean(JSONUtil.toJsonStr(c.getData(), JsonSchemaUtil.jsonConfig), EdgeLoopCell.Data.class);
+                            return data != null && data.getCycleInfo() != null && LoopType.WHILE_DO.equals(data.getCycleInfo().getType());
                         }).collect(Collectors.toList());
                         if (null != inLoopWhileDoEdges && inLoopWhileDoEdges.size() > 0) {
-                            //whileDo判断处理
                             EdgeLoopCell elc = JSONUtil.toBean(JSONUtil.parseObj(inLoopWhileDoEdges.get(0)), EdgeLoopCell.class);
+                            if (elc.getData() == null) {
+                                continue;
+                            }
                             String exp = elc.getData().getJsonpathElexpression();
                             String[] R = elc.getData().getR();
                             String[] L = elc.getData().getL();
-                            String startId = roots.stream().findFirst().get();
-                            List<FunTransform2ObjCell.Data.TransformRule> transformRules = elc.getData().getTransformRules();
-                            //动态参数的赋值变化，如id++
+                            String startId = firstRoot(roots);
                             EdgeLoopCell.CycleInfo cycleInfo = elc.getData().getCycleInfo();
-                            if (null != cycleInfo.getRule()) {
-                                String rule = cycleInfo.getRule();
-                                String stepLength = cycleInfo.getStepLength();
-                                String jsonpathSelect = cycleInfo.getJsonpathSelect().split("\\$")[1];
-                                List<KeyValueDto> dynamicParams = inst.getDynamicParams();
-                                int idx = 0;
-                                for (int k = 0; k < dynamicParams.size(); k++) {
-                                    if (dynamicParams.get(k).getKey().equals(jsonpathSelect)) {
-                                        idx = k;
-                                    }
-                                }
-                                Object dynamicValue = dynamicParams.get(idx).getValue();
-                                String expressionCaculate = dynamicValue + rule + stepLength;
-                                ExpressionParser parser = new SpelExpressionParser();
-                                Expression expression = parser.parseExpression(expressionCaculate);
-                                Object value = expression.getValue();
-                                dynamicParams.get(idx).setValue(value);
-                                inst.setDynamicParams(dynamicParams);
-                                instDao.save(inst);
+                            if (cycleInfo != null && cycleInfo.getRule() != null) {
+                                applyCycleStep(inst, cycleInfo);
                             }
-                            //判断是否需要循环
                             Boolean whileDo = taskService.edgeLoopDecisionDo(startId, instId, exp, R, L, task);
-                            //不需要进行循环
-                            if (!whileDo) {
+                            if (!Boolean.TRUE.equals(whileDo)) {
                                 Set<String> cellIdsBetweenLoopEdge = DslParser.getCellIdsBetweenLoopEdge(inst, inLoopWhileDoEdges.get(0));
                                 inst.getWaitingNodes().removeAll(cellIdsBetweenLoopEdge);
                                 inst.getSkipNodes().removeAll(cellIdsBetweenLoopEdge);
                                 finalNextIds.remove(j);
-                                nodeChildsMap.get(inLoopWhileDoEdges.get(0).getSource().getCell()).stream().forEach(i -> whileDoNextIds.add(i));
+                                Set<String> loopSourceChildren = nodeChildsMap.get(inLoopWhileDoEdges.get(0).getSource() == null ? null : inLoopWhileDoEdges.get(0).getSource().getCell());
+                                if (loopSourceChildren != null) {
+                                    loopSourceChildren.forEach(whileDoNextIds::add);
+                                }
                             } else {
-                                //循环次数+1
-                                NodeLoopInfo nli = inst.getLoopRunTimesMap().get(outLoopEdges.get(0).getId());
-                                nli.setTimes(nli.getTimes() + 1);
-                                inst.getLoopRunTimesMap().put(outLoopEdges.get(0).getId(), nli);
+                                bumpLoopTimes(inst, inLoopWhileDoEdges.get(0).getId(), task);
                             }
                         }
                     }
@@ -351,30 +326,34 @@ public class TaskResultConsumer {
                     String ii = nextIds.get(j);
                     //获取下一节点父节点
                     Set<String> pids = nodeParentsMap.get(ii);
-                    //=========对有决策线连接的节点进行处理========
-                    //获取入度线的id：线target、线id（父节点和下一节点之间的连线），其中有普通连线，循环线
+                    if (pids == null) {
+                        pids = Collections.emptySet();
+                    }
                     Set<String> iiInputEdges = nodeInputEdgesMap.get(ii);
                     if (null != iiInputEdges && iiInputEdges.size() > 0) {
-                        //将循环线的连接头节点去掉
-                        pids = pids.stream().filter(pi -> {
-                            List<String> notLoopInPids = iiInputEdges.stream().filter(ie -> !nodeMap.get(ie).getCellType().equals(CellType.EDGE_LOOP)).map(ie -> nodeMap.get(ie).getSource().getCell()).collect(Collectors.toList());
+                        final Set<String> parentFilter = pids;
+                        pids = parentFilter.stream().filter(pi -> {
+                            List<String> notLoopInPids = iiInputEdges.stream()
+                                    .map(nodeMap::get)
+                                    .filter(edge -> edge != null && !CellType.EDGE_LOOP.equals(edge.getCellType()) && edge.getSource() != null)
+                                    .map(edge -> edge.getSource().getCell())
+                                    .collect(Collectors.toList());
                             return notLoopInPids.contains(pi);
                         }).collect(Collectors.toSet());
                     }
-                    //=========对有决策线连接的节点进行处理结束========
-                    //当前节点已经成功了的父节点个数和对应的父节点个数一致，当前节点进行转换为任务运行
                     long psuccessNum = pids.stream().filter(q -> successNodes.contains(q) || skipNodes.contains(q)).count();
                     if (psuccessNum == pids.size()) {
                         Cell cell = nodeMap.get(ii);
-                        if (!StringUtils.isEmpty(cell)) {
-                            TaskInterface ti = SpringUtil.getBean(cell.getCellType() + TaskType.suffix);
-                            Task t = ti.convert(cell, inst);
+                        Task t = convertCell(cell, inst);
+                        if (t != null) {
                             t.setStartDate(new Date());
                             taskDao.deleteByInstIdAndNodeIdAndLoopTimes(instId, t.getNodeId(), t.getLoopTimes());
                             taskDao.save(t);
-                            //去除重复的任务
                             nextTasks.removeIf(tf -> tf.getNodeId().equals(ii));
                             nextTasks.add(t);
+                        } else if (cell != null) {
+                            inst.setState(Inst.STATE_FAIL);
+                            instDao.save(inst);
                         }
                     }
                 }
@@ -383,15 +362,18 @@ public class TaskResultConsumer {
             for (int i = 0; i < nextTasks.size(); i++) {
                 Task t = nextTasks.get(i);
                 Set<String> inputEdges = inst.getNodeInputEdgesMap().get(t.getNodeId());
-                List<Cell> dicisionEdges = null;
-                //获取决策线
+                List<Cell> dicisionEdges = Collections.emptyList();
                 if (null != inputEdges && inputEdges.size() > 0) {
-                    inputEdges.stream().map(e -> nodeMap.get(e)).filter(cell -> cell.getCellType().equals(CellType.EDGE_DECISION)).collect(Collectors.toList());
+                    dicisionEdges = inputEdges.stream().map(nodeMap::get)
+                            .filter(cell -> cell != null && CellType.EDGE_DECISION.equals(cell.getCellType()))
+                            .collect(Collectors.toList());
                 }
                 Set<String> pids = inst.getNodeParentsMap().get(t.getNodeId());
-                //获取跳过节点，若父节点是跳过节点，则当前节点也是跳过
+                if (pids == null) {
+                    pids = Collections.emptySet();
+                }
                 long pSkipNum = pids.stream().filter(p -> skipNodes.contains(p)).count();
-                if (pSkipNum == skipNodes.size()) {
+                if (!pids.isEmpty() && pSkipNum == pids.size()) {
                     instDao.save(inst);
                     t.setState(Task.STATE_SKIP);
                     taskProductor.sendTaskResult(t);
@@ -399,14 +381,22 @@ public class TaskResultConsumer {
                 } else {
                     //决策线处理
                     if (null != dicisionEdges && dicisionEdges.size() > 0) {
-                        long trueCount = dicisionEdges.stream().map(e -> {
-                            EdgeDecisionCell edgeDecisionCell = JSONUtil.toBean(JSONUtil.parseObj(e), EdgeDecisionCell.class);
-                            String exp = edgeDecisionCell.getData().getJsonpathElexpression();
-                            String[] R = edgeDecisionCell.getData().getR();
-                            String[] L = edgeDecisionCell.getData().getL();
-                            List<EdgeDecisionCell.ConditionData> conditionData = edgeDecisionCell.getData().getConditionData();
-                            String startId = roots.stream().findFirst().get();
-                            return taskService.edgeDecisionDo(startId, instId, exp, R, L, conditionData,t);
+                        long trueCount = dicisionEdges.stream().filter(e -> {
+                            try {
+                                EdgeDecisionCell edgeDecisionCell = JSONUtil.toBean(JSONUtil.parseObj(e), EdgeDecisionCell.class);
+                                if (edgeDecisionCell.getData() == null) {
+                                    return false;
+                                }
+                                String exp = edgeDecisionCell.getData().getJsonpathElexpression();
+                                String[] R = edgeDecisionCell.getData().getR();
+                                String[] L = edgeDecisionCell.getData().getL();
+                                List<EdgeDecisionCell.ConditionData> conditionData = edgeDecisionCell.getData().getConditionData();
+                                String startId = firstRoot(roots);
+                                return Boolean.TRUE.equals(taskService.edgeDecisionDo(startId, instId, exp, R, L, conditionData, t));
+                            } catch (Exception ex) {
+                                instLogDao.save(new InstLog(instId, t.getPlanId(), t.getNodeId(), t.getId(), InstLog.LEVEL_ERRO, "决策线求值失败：" + ex.getMessage()));
+                                return false;
+                            }
                         }).count();
                         //节点所有决策线都通过了，执行节点
                         if (trueCount == dicisionEdges.size()) {
@@ -432,16 +422,125 @@ public class TaskResultConsumer {
             }
             //节点从等待状态移除
             inst.getWaitingNodes().remove(task.getNodeId());
-            taskProductor.ackTask(instId, deliveryTag, channel, "send next task success, do ack.");
+            taskProductor.ackTask(instId, deliveryTag, channel, "send next task success, do ack.", lockNode);
         } catch (Exception e) {
             e.printStackTrace();
             inst.setState(Inst.STATE_FAIL);
-            taskProductor.nAckTask(instId, deliveryTag, channel, "before send next task fail, do nack.");
-        }finally {
+            instDao.save(inst);
+            taskProductor.nAckTask(instId, deliveryTag, channel, "before send next task fail, do nack.", lockNode);
+        } finally {
             System.out.println("finally..........do........inst:" + inst.getId());
             if (null != task) {
                 System.out.println("finally..........do........task:" + JSONUtil.toJsonPrettyStr(task));
             }
+        }
+    }
+
+    private Task convertCell(Cell cell, Inst inst) {
+        if (cell == null) {
+            return null;
+        }
+        String resolved = com.hrh.servicearrange.parser.CellTypeMapper.resolve(cell);
+        try {
+            TaskInterface ti = SpringUtil.getBean(resolved + TaskType.suffix);
+            return ti.convert(cell, inst);
+        } catch (Exception first) {
+            try {
+                TaskInterface fallback = SpringUtil.getBean(CellType.NODE_OP + TaskType.suffix);
+                return fallback.convert(cell, inst);
+            } catch (Exception e) {
+                instLogDao.save(new InstLog(inst.getId(), inst.getPlanId(), cell.getId(), null, InstLog.LEVEL_ERRO,
+                        "找不到节点转换器 " + resolved + TaskType.suffix + "：" + first.getMessage()));
+                return null;
+            }
+        }
+    }
+
+    private boolean bumpLoopTimes(Inst inst, String loopEdgeId, Task task) {
+        if (StrUtil.isEmpty(loopEdgeId) || inst.getLoopRunTimesMap() == null) {
+            return false;
+        }
+        NodeLoopInfo info = inst.getLoopRunTimesMap().get(loopEdgeId);
+        if (info == null) {
+            return false;
+        }
+        int times = info.getTimes() == null ? 0 : info.getTimes();
+        if (times >= backpressure.getMaxLoopTimes()) {
+            instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO,
+                    "循环次数超过上限 " + backpressure.getMaxLoopTimes() + "，退出循环"));
+            return false;
+        }
+        info.setTimes(times + 1);
+        inst.getLoopRunTimesMap().put(loopEdgeId, info);
+        return true;
+    }
+
+    private void applyCycleStep(Inst inst, EdgeLoopCell.CycleInfo cycleInfo) {
+        if (cycleInfo == null || inst.getDynamicParams() == null) {
+            return;
+        }
+        String select = cycleInfo.getJsonpathSelect();
+        if (StrUtil.isEmpty(select) || !select.contains("$")) {
+            return;
+        }
+        String key = select.substring(select.indexOf('$') + 1);
+        List<KeyValueDto> dynamicParams = inst.getDynamicParams();
+        int idx = -1;
+        for (int i = 0; i < dynamicParams.size(); i++) {
+            if (key.equals(dynamicParams.get(i).getKey())) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) {
+            return;
+        }
+        Object dynamicValue = dynamicParams.get(idx).getValue();
+        String expressionCaculate = String.valueOf(dynamicValue) + cycleInfo.getRule() + cycleInfo.getStepLength();
+        try {
+            ExpressionParser parser = new SpelExpressionParser();
+            Expression expression = parser.parseExpression(expressionCaculate);
+            Object value = expression.getValue(org.springframework.expression.spel.support.SimpleEvaluationContext.forReadOnlyDataBinding().build());
+            dynamicParams.get(idx).setValue(value);
+            inst.setDynamicParams(dynamicParams);
+            instDao.save(inst);
+        } catch (Exception e) {
+            instLogDao.save(new InstLog(inst.getId(), inst.getPlanId(), null, null, InstLog.LEVEL_ERRO, "循环计数求值失败：" + e.getMessage()));
+        }
+    }
+
+    private String firstRoot(Set<String> roots) {
+        if (roots == null || roots.isEmpty()) {
+            return null;
+        }
+        return roots.iterator().next();
+    }
+
+    private boolean canRetry(Task.RetryRules retryRules) {
+        if (retryRules == null || retryRules.getTimes() == null || retryRules.getTimes() <= 0) {
+            return false;
+        }
+        int done = retryRules.getDoneTimes() == null ? 0 : retryRules.getDoneTimes();
+        return done < retryRules.getTimes();
+    }
+
+    private long retryDelayMs(Task.RetryRules retryRules) {
+        long delay = 0;
+        if (retryRules.getDelaySecondTimes() != null && retryRules.getDelaySecondTimes() > 0) {
+            delay = retryRules.getDelaySecondTimes() * 1000L;
+        }
+        long cap = orchestration == null ? 3000L : orchestration.getRetryDelayMaxMs();
+        return Math.min(delay, cap);
+    }
+
+    private void sleepQuietly(long ms) {
+        if (ms <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

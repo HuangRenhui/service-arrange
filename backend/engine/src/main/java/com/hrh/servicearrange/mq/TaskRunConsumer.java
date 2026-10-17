@@ -6,7 +6,7 @@ import com.hrh.servicearrange.config.BackpressureProperties;
 import com.hrh.servicearrange.dao.TaskDao;
 import com.hrh.servicearrange.entity.Task;
 import com.hrh.servicearrange.executor.Execute;
-import com.hrh.servicearrange.parser.annotation.CellType;
+import com.hrh.servicearrange.parser.CellTypeMapper;
 import com.hrh.servicearrange.utils.SpringBeanUtils;
 import com.hrh.servicearrange.vo.Task4MQ;
 import com.rabbitmq.client.Channel;
@@ -20,8 +20,6 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
-import java.util.Arrays;
 
 /**
  * 任务消费，执行具体任务
@@ -71,25 +69,26 @@ public class TaskRunConsumer {
                 taskProductor.ackTask(deliveryTag, channel, "ack,runNackTimes>=" + backpressure.getMaxHandleTimes() + ",this message may never be ack,forece ack this message.");
                 return;
             }
-            Execute execute = null;
-            if (Arrays.asList(CellType.FUN_JAR, CellType.FUN_PYTHON).contains(task.getType())) {
-                execute = (Execute) SpringBeanUtils.getBean(CellType.FUN_SHELL);
-            } else {
-                execute = (Execute) SpringBeanUtils.getBean(task.getType());
-            }
+            Execute execute = (Execute) SpringBeanUtils.getBeanOrNull(CellTypeMapper.resolveExecuteType(task));
             if (execute != null) {
                 execute.run(task.getId());
                 taskProductor.ackTask(deliveryTag, channel, "success run");
             } else {
-                task.setRunNackTimes(task.getRunNackTimes() + 1);
-                taskProductor.nAckTask(deliveryTag, channel, "error run");
+                int nack = task.getRunNackTimes() == null ? 0 : task.getRunNackTimes();
+                task.setRunNackTimes(nack + 1);
+                task.setState(Task.STATE_FAIL);
+                taskDao.save(task);
+                taskProductor.nAckTask(deliveryTag, channel, "error run: no executor for type " + task.getType());
             }
         } catch (Exception e) {
             e.printStackTrace();
             if (task != null) {
-                task.setRunNackTimes(task.getRunNackTimes() + 1);
+                int nack = task.getRunNackTimes() == null ? 0 : task.getRunNackTimes();
+                task.setRunNackTimes(nack + 1);
                 taskDao.save(task);
                 taskProductor.nAckTask(deliveryTag, channel, "Exception");
+            } else {
+                taskProductor.ackTask(deliveryTag, channel, "Exception with missing task, do ack.");
             }
         }
     }

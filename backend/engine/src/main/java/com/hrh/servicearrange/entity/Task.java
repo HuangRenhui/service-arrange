@@ -150,6 +150,11 @@ public class Task extends BaseEntity implements Serializable {
          */
         @Field("delaySecondTimes")
         private Long delaySecondTimes;
+        /**
+         * 单任务超时，毫秒；为空时使用全局 task.orchestration.task-timeout-ms
+         */
+        @Field("timeoutMs")
+        private Long timeoutMs;
 
 
         public Integer getTimes() {
@@ -174,6 +179,14 @@ public class Task extends BaseEntity implements Serializable {
 
         public void setDoneTimes(Integer doneTimes) {
             this.doneTimes = doneTimes;
+        }
+
+        public Long getTimeoutMs() {
+            return timeoutMs;
+        }
+
+        public void setTimeoutMs(Long timeoutMs) {
+            this.timeoutMs = timeoutMs;
         }
     }
 

@@ -44,6 +44,11 @@ public class BackpressureProperties {
     private int maxHandleTimes = 5;
 
     /**
+     * 单条循环线允许的最大执行次数，超过后退出循环并记失败日志，避免条件恒真时占满消费线程。
+     */
+    private int maxLoopTimes = 1000;
+
+    /**
      * 消息重排队时是否延迟重投（true 时基于 nextRetryTime 判断是否还没到点，未到点则直接 ack 放弃当前投递，由重投承担）。
      */
     private boolean delayRequeueEnabled = true;

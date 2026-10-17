@@ -1,5 +1,6 @@
 package com.hrh.servicearrange.mq;
 
+import cn.hutool.core.util.StrUtil;
 import com.hrh.servicearrange.config.BackpressureProperties;
 import com.hrh.servicearrange.dao.InstLogDao;
 import com.hrh.servicearrange.dao.TaskDao;
@@ -62,23 +63,25 @@ public class TaskProductor {
         instLogDao.save(instLog);
     }
 
-    public void ackTask(String instId, Long deliveryTag, Channel channel, String msg) {
-        try {
-            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
-        } catch (Exception e) {
-            //锁可能已被其它路径释放，这里不作为失败处理
-            log.debug("release inst lock fail, instId={}, msg={}", instId, e.getMessage());
-        }
+    /**
+     * 仅在本进程持有实例锁（lockNode 非空）时释放 ZK 锁，避免误删其它消费者的 ephemeral 节点。
+     */
+    public void ackTask(String instId, Long deliveryTag, Channel channel, String msg, String lockNode) {
+        releaseLockIfHeld(instId, lockNode);
         this.ackTask(deliveryTag, channel, msg);
     }
 
-    public void nAckTask(String instId, Long deliveryTag, Channel channel, String msg) {
-        try {
-            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
-        } catch (Exception e) {
-            log.debug("release inst lock fail, instId={}, msg={}", instId, e.getMessage());
-        }
+    public void ackTask(String instId, Long deliveryTag, Channel channel, String msg) {
+        ackTask(instId, deliveryTag, channel, msg, null);
+    }
+
+    public void nAckTask(String instId, Long deliveryTag, Channel channel, String msg, String lockNode) {
+        releaseLockIfHeld(instId, lockNode);
         this.nAckTask(deliveryTag, channel, msg);
+    }
+
+    public void nAckTask(String instId, Long deliveryTag, Channel channel, String msg) {
+        nAckTask(instId, deliveryTag, channel, msg, null);
     }
 
     /**
@@ -91,29 +94,20 @@ public class TaskProductor {
      * @param msg         日志信息
      */
     public void nAckLockTask(String taskId, String instId, Long deliveryTag, Channel channel, String msg) {
-        try {
-            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
-        } catch (Exception e) {
-            log.debug("release inst lock fail, instId={}, msg={}", instId, e.getMessage());
-        }
+        //抢锁失败时不得删除 ZK 路径：该路径属于持有锁的消费者。
         Task task = taskId == null ? null : taskDao.findById(taskId).orElse(null);
         if (task == null) {
-            //任务不存在，直接丢弃，避免无意义重排队
             this.ackTask(deliveryTag, channel, msg + " task not found, do ack to avoid requeue storm.");
             return;
         }
         int times = task.getLockNackTimes() == null ? 0 : task.getLockNackTimes();
         if (times >= backpressure.getLockNackMaxTimes()) {
-            //超过重排队上限，强制 ack 丢弃，防止消息在队列中永久空转
             this.ackTask(deliveryTag, channel, msg + " lockNackTimes>= " + backpressure.getLockNackMaxTimes() + ", force ack to avoid requeue storm.");
             return;
         }
         task.setLockNackTimes(times + 1);
-        //记录下次可重投时间，供消费端做退避判断
         task.setNextRetryTime(new Date(System.currentTimeMillis() + backpressure.backoffMs(times + 1)));
         taskDao.save(task);
-        //退避：避免立即重新入队造成的忙等
-        sleepQuietly(backpressure.backoffMs(times + 1));
         this.nAckTask(deliveryTag, channel, msg + " lockNackTimes=" + (times + 1));
     }
 
@@ -139,14 +133,14 @@ public class TaskProductor {
         }
     }
 
-    private void sleepQuietly(long millis) {
-        if (millis <= 0) {
+    private void releaseLockIfHeld(String instId, String lockNode) {
+        if (StrUtil.isEmpty(instId) || StrUtil.isEmpty(lockNode)) {
             return;
         }
         try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            curatorFramework.delete().forPath(Inst.ZK_LOCK_PREFIX + instId);
+        } catch (Exception e) {
+            log.debug("release inst lock fail, instId={}, msg={}", instId, e.getMessage());
         }
     }
 }
