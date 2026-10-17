@@ -108,3 +108,9 @@ task:
     max-handle-times: 5
     #重排队是否启用延迟退避
     delay-requeue-enabled: true
+  #编排治理（发布门禁 / 超时 / 重试退避）
+  orchestration:
+    #生产环境建议 true：仅 PUBLISHED 的 Plan 可被运行
+    require-published: false
+    task-timeout-ms: 60000
+    retry-delay-max-ms: 3000
