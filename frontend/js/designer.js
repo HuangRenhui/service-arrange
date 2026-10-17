@@ -586,32 +586,24 @@
     addNode: function (cellType, x, y, opId) {
       var def = NodeDefs.get(cellType);
       var id = Store.uid();
-      var data = def.defaultData();
-
-      /* 算子节点：绑定具体的算子。
-         注意：算子引用必须放在 cell.data 下（与后端 DSL 及 nodePresentation
-         的读取路径一致），否则节点会渲染成「未绑定算子」。 */
       var name = def.name;
+      var data = typeof def.defaultData === 'function' ? def.defaultData() : {};
       if (cellType === NodeDefs.OP_CELLTYPE) {
         var op = opId ? Store.getOperator(opId) : null;
-        data = { opId: opId || '', opType: (op && op.opType) || 'http' };
+        var snap = Store.snapshotOperator(op);
+        var engineType = Store.engineCellTypeOf({ cellType: NodeDefs.OP_CELLTYPE, data: snap });
+        data = Object.assign({}, snap, { opId: opId || '', opType: (op && op.opType) || 'http', cellType: engineType });
         name = op ? op.name : '未绑定算子';
+        cellType = engineType;
       }
-
-      var cell = Object.assign({}, data, {
+      var cell = {
         id: id,
         cellType: cellType,
         name: name,
         x: x, y: y,
-        ports: { items: [{ id: id + '_out' }, { id: id + '_in' }] }
-      });
-
-      /* 普通节点的业务字段平铺在 cell 上；算子节点的引用统一收敛到 data 下 */
-      if (cellType === NodeDefs.OP_CELLTYPE) {
-        cell.data = { opId: data.opId, opType: data.opType };
-        delete cell.opId;
-        delete cell.opType;
-      }
+        ports: { items: [{ id: id + '_out' }, { id: id + '_in' }] },
+        data: data
+      };
 
       /* 网格吸附 + 避让已有节点，避免重叠堆在一起 */
       this.snapNode(cell);

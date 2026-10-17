@@ -349,9 +349,45 @@
         + '按开始节点声明的 Schema 填写本次运行入参：</div>' + rows;
     },
 
-    /** 创建运行记录并逐节点推进 */
+    /** 创建运行记录；已配置后端时走真实 run 接口 */
     startRun: function (inst, inputs) {
       var self = this;
+      if (Api.base()) {
+        var idem = 'web-' + inst.id + '-' + Date.now();
+        var traceId = 'web' + Date.now().toString(16);
+        Api.runOrGetResult(inst.id, {
+          optType: 'run',
+          sync: false,
+          instName: inst.name,
+          params: inputs,
+          idempotencyKey: idem,
+          traceId: traceId
+        }).then(function (res) {
+          if (!res.ok) {
+            UI.toast(res.msg || '运行失败', 'err');
+            return;
+          }
+          var data = res.body || {};
+          inst.lastRunState = data.state || 'RUNNING';
+          inst.runCount = (inst.runCount || 0) + 1;
+          Store.saveInstance(inst);
+          var run = Store.createRun(inst.id, {
+            inputs: inputs,
+            cells: JSON.parse(JSON.stringify(inst.cells || [])),
+            groups: JSON.parse(JSON.stringify(inst.groups || []))
+          });
+          run.remoteId = data.id;
+          run.traceId = data.traceId || traceId;
+          run.state = data.state || 'RUNNING';
+          Store.saveRun(run);
+          UI.toast(data.idempotentHit ? '命中幂等，返回已有实例' : ('已提交运行 ' + (data.id || '')), 'ok');
+          self.openRuns(inst.id);
+        }).catch(function () {
+          UI.toast('运行请求失败', 'err');
+        });
+        return;
+      }
+
       var run = Store.createRun(inst.id, {
         inputs: inputs,
         cells: JSON.parse(JSON.stringify(inst.cells || [])),
@@ -668,8 +704,27 @@
       inst.cells = dsl.cells;
       inst.groups = dsl.groups;
       Store.saveInstance(inst);
-      App.show('instances');
-      UI.toast('编排已保存', 'ok');
+      Api.instance.save(inst).then(function () {
+        App.show('instances');
+        UI.toast('编排已保存', 'ok');
+      });
+    };
+
+    document.getElementById('btnPublish').onclick = function () {
+      var instId = Designer.instId;
+      if (!instId) { UI.toast('未关联实例', 'err'); return; }
+      var inst = Store.getInstance(instId);
+      var dsl = Store.toDSL(Designer.model);
+      inst.cells = dsl.cells;
+      inst.groups = dsl.groups;
+      Store.saveInstance(inst);
+      Api.instance.save(inst).then(function (res) {
+        if (!res.ok) { UI.toast(res.msg || '保存失败', 'err'); return; }
+        return Api.instance.publish(instId);
+      }).then(function (res) {
+        if (!res || !res.ok) { if (res) UI.toast(res.msg || '发布失败', 'err'); return; }
+        UI.toast('已发布', 'ok');
+      });
     };
 
     /* 保存并运行 */

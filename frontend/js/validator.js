@@ -142,15 +142,19 @@
     /* ---- R10 算子引用有效 ----
      * 节点引用的算子必须仍然存在，否则运行期无法解析出实际调用。 */
     nodes.forEach(function (n) {
-      if (n.cellType !== 'node_op') return;
-      var opId = n.data && n.data.opId;
-      if (!opId) {
-        errors.push('R10：节点「' + (n.name || n.cellType) + '」未绑定算子');
+      if (n.cellType === 'node_start' || n.cellType === 'node_end') return;
+      if (n.cellType === 'node_op') {
+        var opId = n.data && n.data.opId;
+        if (!opId) {
+          errors.push('R10：节点「' + (n.name || n.cellType) + '」未绑定算子');
+          return;
+        }
+        if (global.Store && !Store.getOperator(opId)) {
+          errors.push('R10：节点「' + (n.name || n.cellType) + '」引用的算子已不存在（' + opId + '），请重新绑定');
+        }
         return;
       }
-      if (global.Store && !Store.getOperator(opId)) {
-        errors.push('R10：节点「' + (n.name || n.cellType) + '」引用的算子已不存在（' + opId + '），请重新绑定');
-      }
+      if (/^node_(inner|outer)_/.test(n.cellType)) return;
     });
 
     /* ---- 可达性 ---- */

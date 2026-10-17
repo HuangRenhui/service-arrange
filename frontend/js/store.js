@@ -64,9 +64,11 @@
        opType 取值即后端 cellType（见 dslDemo.json：node_outer_http / node_outer_dubbo /
        node_outer_webservice）。sql / shell 后端暂无对应 cellType，沿用 node_outer_ 前缀
        以便与后端命名规约一致。 */
-    http:  { name: 'HTTP 接口', color: '#14b8a6', icon: '☁', desc: '调用 REST 接口', group: 'outer' },
-    sql:   { name: 'SQL 脚本',  color: '#8b5cf6', icon: '⛁', desc: '执行数据库 SQL', group: 'outer' },
-    shell: { name: 'Shell 脚本', color: '#f59e0b', icon: '$', desc: '执行本机脚本', group: 'outer' },
+    http:  { name: 'HTTP 接口', color: '#14b8a6', icon: '☁', desc: '调用 REST 接口', group: 'outer', cellType: 'node_outer_http' },
+    sql:   { name: 'SQL 脚本',  color: '#8b5cf6', icon: '⛁', desc: '执行数据库 SQL', group: 'outer', cellType: 'node_outer_sql' },
+    shell: { name: 'Shell 脚本', color: '#f59e0b', icon: '$', desc: '执行本机脚本', group: 'outer', cellType: 'node_inner_execShell' },
+    dubbo: { name: 'Dubbo 服务', color: '#0ea5e9', icon: '⬡', desc: '经 HTTP 网关调用 Dubbo', group: 'outer', cellType: 'node_outer_dubbo' },
+    webservice: { name: 'WebService', color: '#0ea5e9', icon: '▤', desc: 'SOAP / XML 接口', group: 'outer', cellType: 'node_outer_webservice' },
 
     /* —— 引擎内置算子（对应 CellType） ——
        仅保留 DSL 样本中真实出现过的类型：
@@ -80,6 +82,10 @@
     dataresult:   { name: '数据结果',     color: '#8b5cf6', icon: '▦', desc: '整理算子输出作为结果集', group: 'inner', cellType: 'node_inner_dataresult' },
     decision:     { name: '决策',         color: '#8b5cf6', icon: '◇', desc: '按条件判定分支', group: 'inner', cellType: 'node_inner_decision' },
     execPython:   { name: 'Python 执行',  color: '#f59e0b', icon: 'π', desc: '执行 python 脚本', group: 'inner', cellType: 'node_inner_execPython' },
+    execJar:      { name: 'Jar 执行',     color: '#f59e0b', icon: '☕', desc: '执行 java -jar', group: 'inner', cellType: 'node_inner_execJar' },
+    sleep:        { name: '延时',         color: '#8b5cf6', icon: '⏱', desc: '等待指定毫秒后继续', group: 'inner', cellType: 'node_inner_sleep' },
+    convertJson2Xml: { name: 'JSON→XML', color: '#8b5cf6', icon: '⇄', desc: 'JSON 转为 XML', group: 'inner', cellType: 'node_inner_convertJson2Xml' },
+    convertXml2Json: { name: 'XML→JSON', color: '#8b5cf6', icon: '⇄', desc: 'XML 转为 JSON', group: 'inner', cellType: 'node_inner_convertXml2Json' },
 
     /* —— 补偿算子 ——
        三者同属「补偿算子」一个分组：样本中它们常在同一条补偿链路上串联，
@@ -214,6 +220,26 @@
         options: ['python3', 'python', 'python2'] },
       { key: 'script', label: '脚本内容', type: 'textarea' },
       { key: 'timeout', label: '超时（毫秒）', type: 'number' }
+    ],
+    execJar: [
+      { key: 'jarPath', label: 'Jar 路径', type: 'text' },
+      { key: 'timeout', label: '超时（毫秒）', type: 'number' }
+    ],
+    sleep: [
+      { key: 'milliseconds', label: '等待毫秒', type: 'number' }
+    ],
+    convertJson2Xml: [
+      { key: 'value', label: 'JSON 文本', type: 'textarea' }
+    ],
+    convertXml2Json: [
+      { key: 'value', label: 'XML 文本', type: 'textarea' }
+    ],
+    dubbo: [
+      { key: 'url', label: 'HTTP 网关地址', type: 'text' }
+    ],
+    webservice: [
+      { key: 'url', label: '服务地址', type: 'text' },
+      { key: 'soap', label: 'SOAP 报文', type: 'textarea' }
     ],
 
     /* —— 补偿算子 —— */
@@ -466,6 +492,15 @@
       base.conditionData = [];
     } else if (t === 'execPython') {
       base.script = ''; base.interpreter = 'python3'; base.timeout = 30000;
+    } else if (t === 'execJar') {
+      base.jarPath = ''; base.timeout = 30000;
+    } else if (t === 'sleep') {
+      base.milliseconds = 1000;
+    } else if (t === 'convertJson2Xml' || t === 'convertXml2Json') {
+      base.value = '';
+    } else if (t === 'dubbo' || t === 'webservice') {
+      base.url = '';
+      base.soap = '';
     }
     /* 注：webservice 目前仅在后端定义（样本见 dslDemo.json 的 node_outer_webservice），
        前端暂未提供字段定义，其补偿版 webserviceCompensate 会自动复用同一份定义，
@@ -480,7 +515,7 @@
    */
   /* v3：清理 OP_TYPES 中已不存在的孤儿播种记录
      （如 dubboCompensate 及样本中从未出现的 sleep / arrayExtract 等） */
-  var SEEDED_FLAG = 'se_arr_op_seeded_v3';
+  var SEEDED_FLAG = 'se_arr_op_seeded_v4';
 
   /** 播种记录的 id 前缀：用于区分「系统预置」与「用户自建」 */
   var SEED_PREFIX = 'builtin_';
@@ -603,6 +638,8 @@
       createTime: 0,
       updateTime: 0,
       lastRunState: '',       // 最近一次运行状态
+      planStatus: 'DRAFT',
+      version: 1,
       runCount: 0
     };
     return saveInstance(inst);
@@ -833,14 +870,45 @@
     return added;
   }
 
+  function snapshotOperator(op) {
+    if (!op) return {};
+    var skip = { id: 1, scope: 1, builtin: 1, createTime: 1, updateTime: 1, sample: 1 };
+    var out = {};
+    Object.keys(op).forEach(function (k) {
+      if (!skip[k]) out[k] = op[k];
+    });
+    var meta = OP_TYPES[op.opType];
+    if (meta && meta.cellType) out.cellType = meta.cellType;
+    return out;
+  }
+
+  function engineCellTypeOf(cell) {
+    var data = (cell && cell.data) || {};
+    if (data.cellType && data.cellType !== 'node_op') return data.cellType;
+    var opType = data.opType;
+    if (opType && OP_TYPES[opType] && OP_TYPES[opType].cellType) return OP_TYPES[opType].cellType;
+    if (cell && cell.cellType && cell.cellType !== 'node_op') return cell.cellType;
+    return cell ? cell.cellType : '';
+  }
+
   /* ============ DSL 序列化（与后端契约一致） ============ */
   function toDSL(model) {
     var cells = (model.cells || []).map(function (c) {
+      var data = {};
+      if (c.data && typeof c.data === 'object') data = Object.assign({}, c.data);
+      ['inputsJsonSchema', 'globals', 'contentType', 'outputsJsonSchema', 'valueJsonpathMapping'].forEach(function (k) {
+        if (c[k] !== undefined && data[k] === undefined) data[k] = c[k];
+      });
+      if (data.opId) {
+        var op = getOperator(data.opId);
+        data = Object.assign({}, snapshotOperator(op), data);
+      }
+      var cellType = engineCellTypeOf({ cellType: c.cellType, data: data });
       var cell = {
         id: c.id,
-        name: c.name || (c.cellType + '_' + c.id),
-        cellType: c.cellType,
-        data: c.data || {}
+        name: c.name || (cellType + '_' + c.id),
+        cellType: cellType,
+        data: data
       };
       if (DslValidator.isEdge(c.cellType)) {
         cell.source = c.source;
@@ -859,7 +927,7 @@
           /* requestMethod 已从表单移除（开始节点只声明全局参数），
              这里一并清理，避免历史实例继续把该字段带入 DSL。 */
           delete cell.data.requestMethod;
-          cell.data.globals = toKeyValueList(c.data && c.data.globals);
+          cell.data.globals = toKeyValueList(data.globals);
         }
       }
       return cell;
@@ -1137,6 +1205,8 @@
     // DSL
     toDSL: toDSL,
     fromDSL: fromDSL,
+    snapshotOperator: snapshotOperator,
+    engineCellTypeOf: engineCellTypeOf,
     createBlank: createBlank
   };
 

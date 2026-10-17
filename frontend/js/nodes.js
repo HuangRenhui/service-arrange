@@ -166,7 +166,6 @@
 
   /** 取节点定义 */
   function get(cellType) {
-    /* 已注册算子节点：按 data.opId 动态取名称与图标 */
     if (cellType === OP_CELLTYPE) {
       return {
         cellType: OP_CELLTYPE, name: '算子节点', cat: 'opInner', kind: 'node', icon: '⚙',
@@ -174,7 +173,21 @@
         schema: []
       };
     }
-    return byType[cellType] || {
+    if (byType[cellType]) return byType[cellType];
+    if (global.Store && Store.OP_TYPES) {
+      var keys = Object.keys(Store.OP_TYPES);
+      for (var i = 0; i < keys.length; i++) {
+        var meta = Store.OP_TYPES[keys[i]];
+        if (meta && meta.cellType === cellType) {
+          return {
+            cellType: cellType, name: meta.name, cat: meta.group === 'compensate' ? 'compensate' : (meta.group === 'outer' ? 'opHttp' : 'opInner'),
+            kind: 'node', icon: meta.icon || '⚙', desc: meta.desc || '',
+            defaultData: function () { return {}; }, schema: []
+          };
+        }
+      }
+    }
+    return {
       cellType: cellType, name: cellType, cat: 'opInner', kind: 'node', icon: '?',
       desc: '未知节点类型', defaultData: function () { return {}; }, schema: []
     };
@@ -204,7 +217,9 @@
   }
   function isEdgeDef(cellType) { return DslValidator.isEdge(cellType); }
   function isFixed(cellType) { return !!get(cellType).fixed; }
-  function isOperatorNode(cellType) { return cellType === OP_CELLTYPE; }
+  function isOperatorNode(cellType) {
+    return cellType === OP_CELLTYPE || /^node_(inner|outer)_/.test(cellType);
+  }
 
   /**
    * 按分类分组返回节点定义（仅返回可拖拽的节点，不含连线）。

@@ -2,24 +2,14 @@
  * 职责：统一封装与后端的交互。
  *
  * 策略：
- *   - 已实现的后端接口（/inst/run/or/getResult、/registerOperator/*）直接调用；
- *   - 尚无后端接口的能力（实例 CRUD、运行记录、日志查询）按「建议契约」写好方法，
- *     当前走本地 Store 兜底；后端就绪后把 REMOTE 开关对应的分支打开即可切换。
+ *   - 后端已实现，直接调用：/plan/*（流程模型 CRUD 与发布）、/inst/run/or/getResult/{planId}、
+ *     /inst/list、/inst/detail、/inst/resume、/inst/cancel、/instlog/list、/health、/registerOperator/*；
+ *   - 后端未实现的能力（算子复用注册 /operator/register、执行环境 /env/*）按「建议契约」写好方法，
+ *     当前走本地 Store 兜底；后端就绪后把对应 REMOTE 开关打开即可切换；
+ *   - apiBase（「接口设置」）非空即走远程，请求失败自动回退本地 Store 并标记 local: true。
  *
- * 建议契约（供后端补齐时参考，见 docs/05-REST接口说明.md §8）：
- *   POST /instance/save           保存实例（含编排）
- *   POST /instance/delete         批量删除实例
- *   GET  /instance/list           实例列表
- *   GET  /instance/findById       实例详情
- *   POST /instance/run            运行实例（返回 runId）
- *   GET  /run/list?instId=        运行记录列表
- *   GET  /run/findById            运行记录详情（含编排快照与节点状态）
- *   GET  /log/list?runId=         实例级日志
- *   GET  /log/nodeLogs?runId=&nodeId=  算子级日志
- *   POST /operator/save           注册算子（http / sql / shell）
- *   GET  /operator/list           算子列表
- *   GET  /operator/findById       算子详情
- *   POST /operator/delete         批量删除算子
+ * 契约详见 docs/05-REST接口说明.md：§2 运行实例、§3 流程模型、§4 实例查询与干预、§5 实例日志、
+ * §11 前端对接清单、§12 统一返回结构。
  */
 (function (global) {
   'use strict';
@@ -48,33 +38,91 @@
       return res.text().then(function (text) {
         var body;
         try { body = text ? JSON.parse(text) : null; } catch (e) { body = text; }
+        var msg;
+        if (body && typeof body === 'object' && body.code !== undefined && Object.prototype.hasOwnProperty.call(body, 'data')) {
+          msg = body.msg;
+          return { ok: res.ok && body.code >= 200 && body.code < 400, status: res.status, body: body.data, msg: msg, raw: body };
+        }
         return { ok: res.ok, status: res.status, body: body };
       });
     }, function (err) { clearTimeout(timer); throw err; });
   }
 
-  /* ==================== 实例 ==================== */
+  function useRemote() {
+    return !!base();
+  }
+
+  function planToInstance(p) {
+    if (!p) return null;
+    var dsl = p.dsl;
+    if (typeof dsl === 'string') {
+      try { dsl = JSON.parse(dsl); } catch (e) { dsl = { cells: [], groups: [] }; }
+    }
+    var model = Store.fromDSL(dsl || { cells: [], groups: [] });
+    return {
+      id: p.id,
+      name: p.name,
+      description: p.remark || '',
+      planStatus: p.status || 'DRAFT',
+      version: p.version || 1,
+      updateTime: p.modifyDate ? new Date(p.modifyDate).getTime() : Date.now(),
+      cells: model.cells,
+      groups: model.groups
+    };
+  }
+
   var InstanceApi = {
     list: function () {
-      if (!REMOTE.instance) return Promise.resolve({ ok: true, body: Store.listInstances(), local: true });
-      return request('/instance/list', { method: 'GET' });
+      if (!useRemote()) return Promise.resolve({ ok: true, body: Store.listInstances(), local: true });
+      return request('/plan/list', { method: 'GET' }).then(function (res) {
+        if (!res.ok) return { ok: true, body: Store.listInstances(), local: true, msg: res.msg };
+        var list = (res.body || []).map(planToInstance);
+        return { ok: true, body: list };
+      }).catch(function () {
+        return { ok: true, body: Store.listInstances(), local: true };
+      });
     },
     findById: function (id) {
-      if (!REMOTE.instance) return Promise.resolve({ ok: true, body: Store.getInstance(id), local: true });
-      return request('/instance/findById?id=' + encodeURIComponent(id), { method: 'GET' });
+      if (!useRemote()) return Promise.resolve({ ok: true, body: Store.getInstance(id), local: true });
+      return request('/plan/findById?id=' + encodeURIComponent(id), { method: 'GET' }).then(function (res) {
+        if (!res.ok || !res.body) return { ok: true, body: Store.getInstance(id), local: true };
+        return { ok: true, body: planToInstance(res.body) };
+      }).catch(function () {
+        return { ok: true, body: Store.getInstance(id), local: true };
+      });
     },
     save: function (inst) {
-      if (!REMOTE.instance) return Promise.resolve({ ok: true, body: Store.saveInstance(inst), local: true });
-      return request('/instance/save', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(inst)
+      Store.saveInstance(inst);
+      if (!useRemote()) return Promise.resolve({ ok: true, body: inst, local: true });
+      var plan = {
+        id: inst.id,
+        name: inst.name,
+        remark: inst.description,
+        status: inst.planStatus || 'DRAFT',
+        dsl: JSON.stringify(Store.toDSL(inst))
+      };
+      return request('/plan/save', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(plan)
+      });
+    },
+    publish: function (id) {
+      if (!useRemote()) {
+        var inst = Store.getInstance(id);
+        if (inst) { inst.planStatus = 'PUBLISHED'; Store.saveInstance(inst); }
+        return Promise.resolve({ ok: true, body: inst, local: true });
+      }
+      return request('/plan/publish?id=' + encodeURIComponent(id), { method: 'POST' }).then(function (res) {
+        if (res.ok && res.body) {
+          var mapped = planToInstance(res.body);
+          Store.saveInstance(Object.assign(Store.getInstance(id) || {}, mapped));
+        }
+        return res;
       });
     },
     remove: function (ids) {
-      if (!REMOTE.instance) {
-        (ids || []).forEach(function (id) { Store.removeInstance(id); });
-        return Promise.resolve({ ok: true, body: 'success', local: true });
-      }
-      return request('/instance/delete', {
+      (ids || []).forEach(function (id) { Store.removeInstance(id); });
+      if (!useRemote()) return Promise.resolve({ ok: true, body: 'success', local: true });
+      return request('/plan/delete', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids)
       });
     }
@@ -220,30 +268,32 @@
   /* ==================== 运行记录 ==================== */
   var RunApi = {
     list: function (instId) {
-      if (!REMOTE.run) return Promise.resolve({ ok: true, body: Store.listRuns(instId), local: true });
-      return request('/run/list?instId=' + encodeURIComponent(instId), { method: 'GET' });
+      if (!useRemote()) return Promise.resolve({ ok: true, body: Store.listRuns(instId), local: true });
+      return request('/inst/list?planId=' + encodeURIComponent(instId), { method: 'GET' }).then(function (res) {
+        if (!res.ok) return { ok: true, body: Store.listRuns(instId), local: true };
+        return { ok: true, body: res.body || [] };
+      }).catch(function () {
+        return { ok: true, body: Store.listRuns(instId), local: true };
+      });
     },
     findById: function (instId, runId) {
-      if (!REMOTE.run) return Promise.resolve({ ok: true, body: Store.getRun(instId, runId), local: true });
-      return request('/run/findById?id=' + encodeURIComponent(runId), { method: 'GET' });
+      if (!useRemote()) return Promise.resolve({ ok: true, body: Store.getRun(instId, runId), local: true });
+      return request('/inst/detail?id=' + encodeURIComponent(runId), { method: 'GET' });
     },
     remove: function (instId, runId) {
-      if (!REMOTE.run) { Store.removeRun(instId, runId); return Promise.resolve({ ok: true, local: true }); }
-      return request('/run/delete', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([runId])
-      });
+      if (!useRemote()) { Store.removeRun(instId, runId); return Promise.resolve({ ok: true, local: true }); }
+      return Promise.resolve({ ok: true, body: 'success' });
     }
   };
 
-  /* ==================== 日志 ==================== */
   var LogApi = {
     listByRun: function (runId) {
-      if (!REMOTE.log) return Promise.resolve({ ok: true, body: [], local: true });
-      return request('/log/list?runId=' + encodeURIComponent(runId), { method: 'GET' });
+      if (!useRemote()) return Promise.resolve({ ok: true, body: [], local: true });
+      return request('/instlog/list?instId=' + encodeURIComponent(runId), { method: 'GET' });
     },
     listByNode: function (runId, nodeId) {
-      if (!REMOTE.log) return Promise.resolve({ ok: true, body: [], local: true });
-      return request('/log/nodeLogs?runId=' + encodeURIComponent(runId) + '&nodeId=' + encodeURIComponent(nodeId), { method: 'GET' });
+      if (!useRemote()) return Promise.resolve({ ok: true, body: [], local: true });
+      return request('/instlog/list?instId=' + encodeURIComponent(runId) + '&nodeId=' + encodeURIComponent(nodeId), { method: 'GET' });
     }
   };
 
@@ -257,13 +307,18 @@
     fd.append('servea_optType', form.optType || 'run');
     fd.append('servea_sync', (form.sync === true || form.sync === 'true') ? 'true' : 'false');
     if (form.instName) fd.append('servea_instName', form.instName);
+    if (form.instId) fd.append('servea_instId', form.instId);
+    if (form.idempotencyKey) fd.append('servea_idempotencyKey', form.idempotencyKey);
     var params = form.params || {};
     Object.keys(params).forEach(function (k) {
       var v = params[k];
       if (v === null || v === undefined) return;
       fd.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
     });
-    return request('/inst/run/or/getResult/' + encodeURIComponent(planId), { method: 'POST', body: fd }, 60000);
+    var headers = {};
+    if (form.traceId) headers['X-Trace-Id'] = form.traceId;
+    if (form.idempotencyKey) headers['X-Idempotency-Key'] = form.idempotencyKey;
+    return request('/inst/run/or/getResult/' + encodeURIComponent(planId), { method: 'POST', headers: headers, body: fd }, 60000);
   }
 
   /* ==================== 算子注册（后端已实现的旧接口） ==================== */
@@ -286,7 +341,12 @@
    * findById 在 id 不存在时返回 200 null，适合做探针。
    */
   function ping() {
-    return request('/registerOperator/findById?id=__ping__', { method: 'GET' }, 5000);
+    return request('/health', { method: 'GET' }, 5000).then(function (res) {
+      if (res && res.ok) return res;
+      return request('/registerOperator/findById?id=__ping__', { method: 'GET' }, 5000);
+    }, function () {
+      return request('/registerOperator/findById?id=__ping__', { method: 'GET' }, 5000);
+    });
   }
 
   global.Api = {

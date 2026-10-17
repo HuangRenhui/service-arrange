@@ -78,6 +78,7 @@
           + '</div>'
           + '<div class="ic-desc">' + esc(i.description || '暂无描述') + '</div>'
           + '<div class="ic-meta">'
+          + '<span class="meta">' + esc(i.planStatus || 'DRAFT') + ' v' + (i.version || 1) + '</span>'
           + '<span class="meta">' + esc(i.planId) + '</span>'
           + '<span class="meta">' + nodeCount + ' 节点</span>'
           + '<span class="meta">运行 ' + (i.runCount || 0) + ' 次</span>'
@@ -85,6 +86,7 @@
           + '</div>'
           + '<div class="ic-foot">'
           + '<button class="ic-btn" data-act="design">编排</button>'
+          + '<button class="ic-btn" data-act="publish">发布</button>'
           + '<button class="ic-btn" data-act="run">运行</button>'
           + '<button class="ic-btn" data-act="runs">运行记录</button>'
           + '<span class="spacer"></span>'
@@ -97,6 +99,13 @@
         card.addEventListener('click', function (e) {
           var act = e.target.dataset && e.target.dataset.act;
           if (act === 'design') { App.openDesigner(id); }
+          else if (act === 'publish') {
+            Api.instance.publish(id).then(function (res) {
+              if (!res.ok) { UI.toast(res.msg || '发布失败', 'err'); return; }
+              Instances.render();
+              UI.toast('已发布', 'ok');
+            });
+          }
           else if (act === 'run') { App.runInstance(id); }
           else if (act === 'runs') { App.openRuns(id); }
           else if (act === 'del') {
