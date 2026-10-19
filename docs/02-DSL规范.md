@@ -2,7 +2,7 @@
 
 本文档描述服务编排引擎的领域专用语言（DSL）。前端画布产出的 JSON、后端 `DslParser` 解析的对象、以及运行时落库的 `Inst`，都以本规范为唯一契约。
 
-> 代码依据：`backend/engine/src/main/java/com/hrh/servicearrange/dsl/*`、`parser/annotation/CellType.java`。
+> 代码依据：`backend/engine/src/main/java/com/hrh/servicearrange/dsl/*`、`parser/annotation/CellType.java`、`parser/CellTypeMapper.java`。
 
 ---
 
@@ -12,10 +12,10 @@
 | --- | --- |
 | 文档名称 | DSL规范 |
 | 文档版本 | v1.0 |
-| 最后更新 | 2026-09-14 |
+| 最后更新 | 2026-10-05 |
 | 状态 | 现行 |
 | 契约地位 | **全系统唯一契约**，前端导出与后端解析均以此为准 |
-| 相关代码 | `dsl/*.java`、`parser/annotation/CellType.java` |
+| 相关代码 | `dsl/*.java`、`parser/annotation/CellType.java`、`parser/CellTypeMapper.java` |
 
 ---
 
@@ -127,8 +127,9 @@
 | 常量 | 字面值 | 含义 |
 | --- | --- | --- |
 | `OPERATOR_HTTP` | `node_outer_http` | HTTP 调用 |
-| `OPERATOR_DUBBO` | `node_outer_dubbo` | Dubbo 调用 |
-| `OPERATOR_WEBSERVICE` | `node_outer_webservice` | WebService 调用 |
+| `OPERATOR_DUBBO` | `node_outer_dubbo` | Dubbo 调用（经 HTTP 网关泛化转发） |
+| `OPERATOR_WEBSERVICE` | `node_outer_webservice` | WebService（SOAP）调用 |
+| `OPERATOR_SQL` | `node_outer_sql` | SQL 调用（JDBC 直连执行） |
 
 ### 3.6 补偿算子节点
 
@@ -137,6 +138,36 @@
 | `OPERATOR_HTTP_COMPENSATE` | `node_outer_httpCompensate` | HTTP 补偿 |
 | `OPERATOR_DUBBO_COMPENSATE` | `node_outer_dubboCompensate` | Dubbo 补偿 |
 | `OPERATOR_WEBSERVICE_COMPENSATE` | `node_outer_webserviceCompensate` | WebService 补偿 |
+
+### 3.7 画布统一算子节点
+
+| 常量 | 字面值 | 含义 |
+| --- | --- | --- |
+| `NODE_OP` | `node_op` | 前端画布的**统一算子节点**：不为每个算子单独定义 cellType，真实类型延迟到转换/执行前由 `parser/CellTypeMapper` 解析 |
+
+前端控制台的算子节点统一导出为 `cellType = "node_op"`，具体类型放在 `data` 里。解析优先级（见 `CellTypeMapper#resolve`）：
+
+| 优先级 | 判定 | 结果 |
+| --- | --- | --- |
+| 1 | `data.cellType` 非空且不是 `node_op` | 直接使用该值（完整 cellType） |
+| 2 | `data.opType` 命中映射表 | 转为对应 cellType |
+| 3 | `cellType` 为空或仍为 `node_op` | **回退 `node_outer_http`** |
+
+`opType` → cellType 映射表（`CellTypeMapper.OP_TYPE_TO_CELL`）：
+
+| opType | cellType | | opType | cellType |
+| --- | --- | --- | --- | --- |
+| `http` | `node_outer_http` | | `execJar` | `node_inner_execJar` |
+| `sql` | `node_outer_sql` | | `sleep` | `node_inner_sleep` |
+| `shell` / `execShell` | `node_inner_execShell` | | `convertJson2Xml` | `node_inner_convertJson2Xml` |
+| `datamap` | `node_inner_datamap` | | `convertXml2Json` | `node_inner_convertXml2Json` |
+| `transform2obj` | `node_inner_transform2Obj` | | `compensateDatamap` | `node_inner_compensateDatamap` |
+| `dataresult` | `node_inner_dataresult` | | `httpCompensate` | `node_outer_httpCompensate` |
+| `decision` | `node_inner_decision` | | `webserviceCompensate` | `node_outer_webserviceCompensate` |
+| `execPython` | `node_inner_execPython` | | `dubboCompensate` | `node_outer_dubboCompensate` |
+| `dubbo` | `node_outer_dubbo` | | `webservice` | `node_outer_webservice` |
+
+> 两种写法等价：导出时写完整 cellType（如 `node_outer_sql`），或写 `node_op` + `data.opType: "sql"`。前端采用后者，便于算子注册表单与画布节点复用同一结构（`data.opId` 绑定已注册算子）。
 
 > **约定**：任务类型（`Task.type`）= `cellType + "_task"`，见 `TaskType.java`。例如 `node_start_task`、`node_outer_http_task`。Spring 容器中的转换器 Bean 名即用该值注册，例如 `@Service(TaskType.START)`。
 
@@ -350,6 +381,30 @@
 >
 > 该结构取自 `hrh_dslDemo1.json` 中开始节点的实际内容。
 
+### 4.9 算子节点 data 通用规范（`node_op` 及各算子）
+
+除开始/结束/数据映射/规则转换等已定义独立 Cell 的节点外，其余算子节点（含画布统一节点 `node_op`）的 `data` **不要求强类型结构**：转换器 `convert/JsonPayloadTask` 会把整个 `data` 序列化为 JSON 字符串写入 `task.inputs`（`data` 为空时写 `"{}"`），执行器再按字段名从中取值。
+
+因此这类节点的 `data` 只需包含下表的**关键字段**（字段名大小写敏感）：
+
+| 算子（cellType / opType） | 关键字段 | 说明 |
+| --- | --- | --- |
+| SQL（`node_outer_sql`）| `jdbcUrl`（或 `url`）、`sql`（或 `script`）、`username`、`password` | JDBC 直连；查询返回 `rows`（最多 500 行），非查询返回 `updateCount`；查询超时 15s |
+| Shell（`node_inner_execShell`）| `script`、`timeout` | 本地脚本；`timeout` 默认 10000ms，钳制 1000~30000ms；stdout 截断 256KB |
+| Python（`node_inner_execPython`）| `script`、`interpreter` | `interpreter` 默认 `python`，命令为 `<interpreter> -c <script>` |
+| Jar（`node_inner_execJar`）| `jarPath`（或 `url`） | 命令为 `java -jar <jarPath>` |
+| 延时（`node_inner_sleep`）| `milliseconds`（缺省取 `timeout`，再缺省 1000） | 钳制 0~60000ms，输出 `{"slept":ms}` |
+| Dubbo（`node_outer_dubbo`）| `url`（或 `serviceUrl`） | Dubbo HTTP 网关地址，以 `http` 开头才执行 POST 转发 |
+| WebService（`node_outer_webservice`）| `url`（或 `serviceUrl`）、`soap`（或 `body` / `script` / `reqBodyOther`） | SOAP 请求，`Content-Type: text/xml;charset=UTF-8` |
+| JSON→XML（`node_inner_convertJson2Xml`）| `value`（缺省取 `script`，再缺省整包 inputs） | 输出 contentType=application/xml |
+| XML→JSON（`node_inner_convertXml2Json`）| `value`（同上） | 输出 contentType=application/json |
+| 规则转换（`node_inner_transform2Obj`）| `transformRules`（或 `transformRuleList`） | 规则结构见 §4.6 |
+| 数据结果（`node_inner_dataresult`）| `resultRules` | `key` + `jsonpathMapping`，从 START 输出提取最终结果 |
+| 决策（`node_inner_decision`）| 无必需字段 | 直接置 SUCCESS，分支走向由 `edge_decision` 求值决定 |
+| 补偿类（`*Compensate` / `compensateDatamap`）| 与被补偿算子相同 | 委托对应主算子执行器执行 |
+
+> 画布统一节点 `node_op` 额外在 `data` 中携带 `cellType` / `opType`（类型解析，见 §3.7）与 `opId`（绑定已注册算子，见校验规则 R10）。
+
 ## §5 Group（强组合 / 补偿组）
 
 ```json
@@ -377,11 +432,11 @@
 
 ### 6.1 最简流程（开始 → 数据映射 → HTTP → 结束）
 
-见 `main/src/main/resources/hrh_http.json`。
+见 `backend/web/src/main/resources/hrh_http.json`。
 
 ### 6.2 带补偿的流程
 
-见 `main/src/main/resources/hrh_dslDemo1.json`，要点：
+见 `backend/web/src/main/resources/hrh_dslDemo1.json`，要点：
 
 - HTTP 节点 `groupIds` 指向补偿组；
 - HTTP 节点的 `ports.items` 有三个桩点，分别接普通出线 / 补偿出线 / 其他出线；
