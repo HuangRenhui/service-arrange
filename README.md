@@ -3,6 +3,32 @@
 基于 DSL 的服务编排平台。用一份可视化编排的 JSON（DSL）把多个分散的服务串成可执行流程，提供解析、调度执行、状态日志、失败补偿、循环与条件分支能力。
 
 > 详细说明见 [`docs/`](./docs) 目录，建议从 [文档说明](./docs/文档说明.md) 开始。
+> English version: [`README.en.md`](./README.en.md)。
+
+---
+
+## 界面预览
+
+**编排设计器**：左侧分类节点库（HTTP / SQL / Shell / 内部算子），画布支持普通线、决策线、循环线、补偿线四种线型，节点可拖拽、属性面板分组编辑。
+
+![编排设计器](./docs/images/02-designer.png)
+
+![拖拽节点调整布局](./docs/images/drag-node.gif)
+
+**运行详情**：每次运行一条记录，编排图按结果染色（成功 / 失败 / 跳过 / 运行中 / 未执行），可下钻到算子级日志。
+
+![运行详情 · 编排图](./docs/images/04-run-detail-graph.png)
+
+<details>
+<summary>更多截图（实例列表 / 算子注册 / Schema 工具 / 运行入参 / 失败补偿）</summary>
+
+![实例列表](./docs/images/01-instances.png)
+![算子注册](./docs/images/06-operator.png)
+![Schema 工具](./docs/images/07-schema.png)
+![运行入参](./docs/images/08-run-inputs.png)
+![失败运行 · 编排图染色](./docs/images/10-run-detail-fail-graph.png)
+
+</details>
 
 ---
 
@@ -22,7 +48,8 @@ service-arrange/
 ├── frontend/                   可视化编排控制台（纯静态，零依赖）
 │   ├── index.html
 │   ├── css/style.css
-│   └── js/*.js
+│   ├── js/*.js
+│   └── serve.js                本地零依赖静态服务器（Node 内置模块）
 │
 └── docs/                       项目文档
     ├── 文档说明.md              文档体系入口与体例基准
@@ -56,12 +83,17 @@ service-arrange/
 frontend/index.html
 ```
 
-或启动一个静态服务器：
+或启动仓库自带的零依赖静态服务器（推荐）：
 
 ```powershell
 cd frontend
+node serve.js      # 默认监听 127.0.0.1:5173
+```
+
+其他等价的静态服务器（可选，需要本地已装 Node/npm 或 Python）：
+
+```powershell
 npx serve .
-# 或
 python -m http.server 5173
 ```
 
