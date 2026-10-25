@@ -73,10 +73,19 @@ public interface Execute {
             if (future != null) {
                 future.cancel(true);
             }
+            //执行超时通常是下游变慢或负载过高，按可重试处理，由 RetryRules 限定次数
+            task.setErrorClass(ErrorClass.RETRYABLE.name());
+            task.setErrorCode("TIMEOUT");
+            task.setErrorMessage("任务超时 " + timeoutMs + "ms");
             task.setState(Task.STATE_FAIL);
             instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
                     InstLog.LEVEL_ERRO, "任务超时 " + timeoutMs + "ms"));
         } catch (Exception e) {
+            //执行器未产出分类时的兜底：按 retryable-exceptions 前缀匹配，未命中则按 default-action
+            ErrorClassifier.Verdict verdict = SpringUtil.getBean(ErrorClassifier.class).classify(null, e);
+            task.setErrorClass(verdict.getErrorClass().name());
+            task.setErrorCode(verdict.getCode());
+            task.setErrorMessage(verdict.getMessage());
             task.setState(Task.STATE_FAIL);
             instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
                     InstLog.LEVEL_ERRO, "任务执行异常：" + e.getMessage()));
@@ -86,6 +95,9 @@ public interface Execute {
         }
         if (task != null) {
             task.setExecutorEndDate(new Date());
+            //必须先落库：消费端 TaskResultConsumer 是 findById 重读 Task，
+            //不落库则执行器设置的 errorClass / errorCode 会丢失
+            taskDao.save(task);
             taskProductor.sendTaskResult(task);
         }
     }

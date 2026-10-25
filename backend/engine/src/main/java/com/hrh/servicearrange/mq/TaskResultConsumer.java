@@ -21,6 +21,7 @@ import com.hrh.servicearrange.entity.Inst;
 import com.hrh.servicearrange.entity.InstLog;
 import com.hrh.servicearrange.entity.NodeLoopInfo;
 import com.hrh.servicearrange.entity.Task;
+import com.hrh.servicearrange.executor.ErrorClass;
 import com.hrh.servicearrange.parser.DslParser;
 import com.hrh.servicearrange.parser.annotation.CellType;
 import com.hrh.servicearrange.parser.annotation.LoopType;
@@ -142,7 +143,14 @@ public class TaskResultConsumer {
             return;
         }
         task.setEndDate(new Date());
-        if (state.equals(Task.STATE_FAIL) && canRetry(retryRules)) {
+        //错误分类：FATAL 直接跳过重试（进入补偿/失败分支）；为 null 表示旧数据或未分类，按可重试保持原行为
+        boolean retryable = task.getErrorClass() == null
+                || ErrorClass.RETRYABLE.name().equals(task.getErrorClass());
+        if (state.equals(Task.STATE_FAIL) && !retryable) {
+            instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
+                    InstLog.LEVEL_WARN, "错误分类 FATAL（code=" + task.getErrorCode() + "），跳过重试直接失败"));
+        }
+        if (state.equals(Task.STATE_FAIL) && retryable && canRetry(retryRules)) {
             int done = retryRules.getDoneTimes() == null ? 0 : retryRules.getDoneTimes();
             retryRules.setDoneTimes(done + 1);
             task.setRetryRules(retryRules);

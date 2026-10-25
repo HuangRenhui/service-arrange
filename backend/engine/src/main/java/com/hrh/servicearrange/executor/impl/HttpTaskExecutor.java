@@ -13,9 +13,12 @@ import com.hrh.servicearrange.dsl.KeyValueDto;
 import com.hrh.servicearrange.entity.Inst;
 import com.hrh.servicearrange.entity.InstLog;
 import com.hrh.servicearrange.entity.Task;
+import com.hrh.servicearrange.executor.ErrorClass;
+import com.hrh.servicearrange.executor.ErrorClassifier;
 import com.hrh.servicearrange.executor.Execute;
 import com.hrh.servicearrange.parser.annotation.CellType;
 import com.hrh.servicearrange.utils.JsonSchemaUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -51,6 +54,12 @@ public class HttpTaskExecutor implements Execute {
      */
     @Value("${task.http.read-timeout:30000}")
     private int readTimeout;
+
+    /**
+     * 错误码分类器：把 HTTP 状态码 / 响应体业务码映射为 SUCCESS / RETRYABLE / FATAL
+     */
+    @Autowired
+    private ErrorClassifier errorClassifier;
 
     @Override
     public Task runProcess(Task task, Inst inst, TaskDao taskDao, InstLogDao instLogDao) {
@@ -205,15 +214,25 @@ public class HttpTaskExecutor implements Execute {
                 int status = httpResponse.getStatus();
                 //获取失败的错误信息
                 Object error = jsonObject.get("error");
-                if (status != 200 || (error != null && responseResult.contains(error.toString()))) {
-                    task.setState(Task.STATE_FAIL);
-                    log = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), task.getNodeName() + "节点执行失败！");
-                    instLogDao.save(log);
-                    log = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), task.getNodeName() + "节点执行失败返回信息：" + responseResult);
-                    instLogDao.save(log);
-                } else {
+                //按 task.error-mapping.http 映射为三态：SUCCESS / RETRYABLE / FATAL
+                ErrorClassifier.Verdict verdict = errorClassifier.classify("http", status, responseResult, null);
+                //显式配置的 error 关键字属于业务约定的失败标记，直接判为不可重试
+                if (error != null && responseResult != null && responseResult.contains(error.toString())) {
+                    verdict = new ErrorClassifier.Verdict(ErrorClass.FATAL, error.toString(),
+                            "命中 error 关键字：" + error + "，protocol=http");
+                }
+                task.setErrorClass(verdict.getErrorClass().name());
+                task.setErrorCode(verdict.getCode());
+                task.setErrorMessage(verdict.getMessage());
+                if (verdict.isSuccess()) {
                     task.setState(Task.STATE_SUCCESS);
                     log = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), task.getNodeName() + "节点执行成功！");
+                    instLogDao.save(log);
+                } else {
+                    task.setState(Task.STATE_FAIL);
+                    log = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), task.getNodeName() + "节点执行失败！错误分类：" + verdict.getErrorClass() + "，" + verdict.getMessage());
+                    instLogDao.save(log);
+                    log = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), task.getNodeName() + "节点执行失败返回信息：" + responseResult);
                     instLogDao.save(log);
                 }
                 //记录请求的返回信息、content-type、返回的定义信息schema、下一节点的头信息
@@ -228,7 +247,13 @@ public class HttpTaskExecutor implements Execute {
                 task.setOutputs(result);
             } catch (Exception e) {
                 if (task != null) {
-                    log = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), task.getNodeName() + "节点执行异常：" + e.getMessage());
+                    //异常场景无状态码，由分类器按 retryable-exceptions 前缀 + default-action 兜底
+                    ErrorClassifier.Verdict verdict = errorClassifier.classify("http", e);
+                    task.setErrorClass(verdict.getErrorClass().name());
+                    task.setErrorCode(verdict.getCode());
+                    task.setErrorMessage(verdict.getMessage());
+                    log = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
+                            task.getNodeName() + "节点执行异常：" + e.getMessage() + "，错误分类：" + verdict.getErrorClass());
                     instLogDao.save(log);
                     task.setState(Task.STATE_FAIL);
                 }

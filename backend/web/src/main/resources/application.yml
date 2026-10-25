@@ -114,3 +114,49 @@ task:
     require-published: false
     task-timeout-ms: 60000
     retry-delay-max-ms: 3000
+  #错误码映射与重试分类：换协议/换厂商只改映射，执行器与编排零改动
+  error-mapping:
+    #未知错误码默认分类：conservative(保守→FATAL) / optimistic(乐观→RETRYABLE)
+    default-action: conservative
+    #无错误码场景下按可重试处理的异常类名前缀（连接超时、连接重置、瞬时SQL异常等）
+    retryable-exceptions:
+      - java.net.
+      - java.io.IOException
+      - java.util.concurrent.TimeoutException
+      - java.sql.SQLTransientException
+    protocols:
+      http:
+        #按 HTTP 状态码判定
+        match: status
+        success: [200, 204]
+        retryable: [429, 502, 503, 504]
+        fatal: [400, 401, 403, 404, 422]
+        #HTTP 2xx 但响应体业务码非成功时启用（不配则只看状态码）
+        body-code:
+          path: "$.code"
+          success: ["0"]
+          retryable: ["SYS_BUSY", "LOCKED"]
+          fatal: ["PARAM_INVALID", "NO_PERMISSION"]
+      dubbo:
+        #泛化调用经网关时按响应体错误码判定，取不到则回退 HTTP 状态码
+        match: body-jsonpath
+        path: "$.errorCode"
+        success: ["0"]
+        retryable: []
+        fatal: []
+      webservice:
+        #按 SOAP Fault 码判定
+        match: soap-fault
+        retryable: ["Server.Timeout"]
+        fatal: ["Client.Validation"]
+      sql:
+        #按 SQLState 判定：40001/40P01 可重试（死锁/串行化失败），42xxx/07xxx 不可重试
+        match: sqlstate
+        retryable: ["40001", "40P01"]
+        fatal: ["42xxx", "07xxx"]
+      script:
+        #按进程退出码判定
+        match: exit-code
+        success: ["0"]
+        retryable: []
+        fatal: []

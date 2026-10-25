@@ -1,5 +1,6 @@
 package com.hrh.servicearrange.executor.impl;
 
+import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.hrh.servicearrange.dao.InstLogDao;
@@ -7,6 +8,8 @@ import com.hrh.servicearrange.dao.TaskDao;
 import com.hrh.servicearrange.entity.Inst;
 import com.hrh.servicearrange.entity.InstLog;
 import com.hrh.servicearrange.entity.Task;
+import com.hrh.servicearrange.executor.ErrorClass;
+import com.hrh.servicearrange.executor.ErrorClassifier;
 import com.hrh.servicearrange.executor.Execute;
 import com.hrh.servicearrange.parser.annotation.CellType;
 import org.springframework.stereotype.Service;
@@ -40,6 +43,10 @@ public class ScriptOperateExecutor implements Execute {
                 cmd = buildCommand(task.getType(), inputs);
             }
             if (cmd.isEmpty()) {
+                //配置缺失属于不可恢复的错误，直接判 FATAL，避免无意义重试
+                task.setErrorClass(ErrorClass.FATAL.name());
+                task.setErrorCode("CMD_EMPTY");
+                task.setErrorMessage("脚本命令为空");
                 task.setState(Task.STATE_FAIL);
                 instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, "脚本命令为空"));
                 return task;
@@ -50,6 +57,10 @@ public class ScriptOperateExecutor implements Execute {
             boolean finished = process.waitFor(timeout, TimeUnit.MILLISECONDS);
             if (!finished) {
                 process.destroyForcibly();
+                //脚本超时通常是下游或机器负载问题，按可重试处理，由 RetryRules 限定次数
+                task.setErrorClass(ErrorClass.RETRYABLE.name());
+                task.setErrorCode("TIMEOUT");
+                task.setErrorMessage("脚本超时 " + timeout + "ms");
                 task.setState(Task.STATE_FAIL);
                 instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, "脚本超时 " + timeout + "ms"));
                 return task;
@@ -59,13 +70,53 @@ public class ScriptOperateExecutor implements Execute {
             JSONObject result = JSONUtil.createObj().set("exitCode", code).set("stdout", out);
             task.getOutputs().setContentType("application/json");
             task.getOutputs().setValue(JSONUtil.toJsonStr(result));
-            task.setState(code == 0 ? Task.STATE_SUCCESS : Task.STATE_FAIL);
+            if (code == 0) {
+                task.setErrorClass(ErrorClass.SUCCESS.name());
+                task.setErrorMessage(null);
+                task.setState(Task.STATE_SUCCESS);
+            } else {
+                //按 task.error-mapping.script 的 exit-code 分类；未配置时沿用原行为（不贴分类，消费端按可重试）
+                applyExitCode(task, code, out);
+                task.setState(Task.STATE_FAIL);
+            }
             instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO, "脚本退出码 " + code));
         } catch (Exception e) {
+            ErrorClassifier classifier = classifier();
+            if (classifier != null) {
+                ErrorClassifier.Verdict verdict = classifier.classify("script", e);
+                task.setErrorClass(verdict.getErrorClass().name());
+                task.setErrorCode(verdict.getCode());
+                task.setErrorMessage(verdict.getMessage());
+            }
             task.setState(Task.STATE_FAIL);
             instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, "脚本执行失败：" + e.getMessage()));
         }
         return task;
+    }
+
+    /**
+     * 按 task.error-mapping.script 的 exit-code 规则把退出码映射为三态分类。
+     */
+    private static void applyExitCode(Task task, int code, String out) {
+        ErrorClassifier classifier = classifier();
+        if (classifier == null) {
+            return;
+        }
+        ErrorClassifier.Verdict verdict = classifier.classify("script", code, out, null);
+        task.setErrorClass(verdict.getErrorClass().name());
+        task.setErrorCode(verdict.getCode());
+        task.setErrorMessage(verdict.getMessage());
+    }
+
+    /**
+     * 静态方法无法走依赖注入，从 Spring 容器取分类器；容器不可用时返回 null 并保持原判定行为。
+     */
+    private static ErrorClassifier classifier() {
+        try {
+            return SpringUtil.getBean(ErrorClassifier.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static List<String> buildCommand(String type, JSONObject inputs) {

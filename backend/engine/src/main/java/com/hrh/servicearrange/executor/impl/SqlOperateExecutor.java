@@ -8,8 +8,11 @@ import com.hrh.servicearrange.dao.TaskDao;
 import com.hrh.servicearrange.entity.Inst;
 import com.hrh.servicearrange.entity.InstLog;
 import com.hrh.servicearrange.entity.Task;
+import com.hrh.servicearrange.executor.ErrorClass;
+import com.hrh.servicearrange.executor.ErrorClassifier;
 import com.hrh.servicearrange.executor.Execute;
 import com.hrh.servicearrange.parser.annotation.CellType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -23,6 +26,13 @@ import java.util.Properties;
 @Service(CellType.OPERATOR_SQL)
 public class SqlOperateExecutor implements Execute {
 
+    /**
+     * 错误码分类器：把 SQLState 映射为 SUCCESS / RETRYABLE / FATAL，
+     * 用于区分死锁（可重试）与语法错误（重试无意义）
+     */
+    @Autowired
+    private ErrorClassifier errorClassifier;
+
     @Override
     public Task runProcess(Task task, Inst inst, TaskDao taskDao, InstLogDao instLogDao) {
         Connection conn = null;
@@ -32,6 +42,10 @@ public class SqlOperateExecutor implements Execute {
             String jdbcUrl = inputs.getStr("jdbcUrl", inputs.getStr("url"));
             String sql = inputs.getStr("sql", inputs.getStr("script"));
             if (StringUtils.isEmpty(jdbcUrl) || StringUtils.isEmpty(sql)) {
+                //配置缺失属于不可恢复的错误，直接判 FATAL，避免无意义重试
+                task.setErrorClass(ErrorClass.FATAL.name());
+                task.setErrorCode("CONFIG_MISSING");
+                task.setErrorMessage("SQL 节点需要 jdbcUrl 与 sql");
                 task.setState(Task.STATE_FAIL);
                 instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, "SQL 节点需要 jdbcUrl 与 sql"));
                 return task;
@@ -70,10 +84,18 @@ public class SqlOperateExecutor implements Execute {
             }
             task.getOutputs().setContentType("application/json");
             task.getOutputs().setValue(JSONUtil.toJsonStr(out));
+            task.setErrorClass(ErrorClass.SUCCESS.name());
+            task.setErrorMessage(null);
             task.setState(Task.STATE_SUCCESS);
         } catch (Exception e) {
+            //按 task.error-mapping.sql 的 sqlstate 分类：40001/40P01 等可重试，42xxx/07xxx 等不可重试
+            ErrorClassifier.Verdict verdict = errorClassifier.classify("sql", e);
+            task.setErrorClass(verdict.getErrorClass().name());
+            task.setErrorCode(verdict.getCode());
+            task.setErrorMessage(verdict.getMessage());
             task.setState(Task.STATE_FAIL);
-            instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, "SQL 执行失败：" + e.getMessage()));
+            instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO,
+                    "SQL 执行失败（" + verdict.getErrorClass() + "）：" + e.getMessage()));
         } finally {
             try { if (stmt != null) stmt.close(); } catch (Exception ignored) {}
             try { if (conn != null) conn.close(); } catch (Exception ignored) {}

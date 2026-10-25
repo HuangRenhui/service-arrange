@@ -132,6 +132,22 @@ public class Task extends BaseEntity implements Serializable {
      */
     @Field("loopTimes")
     private String loopTimes = "0";
+    /**
+     * 错误分类：SUCCESS / RETRYABLE / FATAL，由 ErrorClassifier 依据 task.error-mapping 配置产出。
+     * 为空表示旧数据或未分类，消费端按可重试处理以保持原有行为。
+     */
+    @Field("errorClass")
+    private String errorClass;
+    /**
+     * 归一化错误码：HTTP 状态码、业务码、SQLState、退出码或 SOAP Fault 码
+     */
+    @Field("errorCode")
+    private String errorCode;
+    /**
+     * 归一化错误描述，便于排障与日志检索
+     */
+    @Field("errorMessage")
+    private String errorMessage;
 
 
     public static class RetryRules {
@@ -426,5 +442,29 @@ public class Task extends BaseEntity implements Serializable {
 
     public void setLoopTimes(String loopTimes) {
         this.loopTimes = loopTimes;
+    }
+
+    public String getErrorClass() {
+        return errorClass;
+    }
+
+    public void setErrorClass(String errorClass) {
+        this.errorClass = errorClass;
+    }
+
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 }
