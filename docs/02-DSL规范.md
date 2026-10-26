@@ -12,7 +12,7 @@
 | --- | --- |
 | 文档名称 | DSL规范 |
 | 文档版本 | v1.0 |
-| 最后更新 | 2026-10-05 |
+| 最后更新 | 2026-10-22 |
 | 状态 | 现行 |
 | 契约地位 | **全系统唯一契约**，前端导出与后端解析均以此为准 |
 | 相关代码 | `dsl/*.java`、`parser/annotation/CellType.java`、`parser/CellTypeMapper.java` |
@@ -404,6 +404,19 @@
 | 补偿类（`*Compensate` / `compensateDatamap`）| 与被补偿算子相同 | 委托对应主算子执行器执行 |
 
 > 画布统一节点 `node_op` 额外在 `data` 中携带 `cellType` / `opType`（类型解析，见 §3.7）与 `opId`（绑定已注册算子，见校验规则 R10）。
+
+**通用可选字段：`errorMapping`**（所有算子节点通用）
+
+错误码映射的算子级覆盖，结构与全局 `task.error-mapping.protocols.<protocol>` 同构，按「节点表优先、全局表兜底」判定：
+
+| 字段 | 说明 |
+| --- | --- |
+| `match` | 判据方式 `status` / `body-jsonpath` / `soap-fault` / `sqlstate` / `exit-code`，缺省沿用全局 |
+| `path` | 业务码 jsonpath，`match=body-jsonpath` 时使用 |
+| `success` / `retryable` / `fatal` | 三张错误码表，节点命中的码优先于全局，未声明的码回退全局 |
+| `bodyCode` | 业务码二级规则，含 `path` 与三张表，仅在主判据判定为成功时生效 |
+
+> 三态含义与重试衔接见 [配置说明](12-配置说明.md) §3.3.3；该字段缺失或结构非法时静默回退全局，不影响流程执行。
 
 ## §5 Group（强组合 / 补偿组）
 
