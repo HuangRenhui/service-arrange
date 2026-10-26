@@ -83,7 +83,7 @@ public class ScriptOperateExecutor implements Execute {
         } catch (Exception e) {
             ErrorClassifier classifier = classifier();
             if (classifier != null) {
-                ErrorClassifier.Verdict verdict = classifier.classify("script", e);
+                ErrorClassifier.Verdict verdict = classifier.classify(task, "script", e);
                 task.setErrorClass(verdict.getErrorClass().name());
                 task.setErrorCode(verdict.getCode());
                 task.setErrorMessage(verdict.getMessage());
@@ -102,7 +102,7 @@ public class ScriptOperateExecutor implements Execute {
         if (classifier == null) {
             return;
         }
-        ErrorClassifier.Verdict verdict = classifier.classify("script", code, out, null);
+        ErrorClassifier.Verdict verdict = classifier.classify(task, "script", code, out, null);
         task.setErrorClass(verdict.getErrorClass().name());
         task.setErrorCode(verdict.getCode());
         task.setErrorMessage(verdict.getMessage());

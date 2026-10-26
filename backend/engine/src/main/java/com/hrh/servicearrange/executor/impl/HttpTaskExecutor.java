@@ -215,7 +215,7 @@ public class HttpTaskExecutor implements Execute {
                 //获取失败的错误信息
                 Object error = jsonObject.get("error");
                 //按 task.error-mapping.http 映射为三态：SUCCESS / RETRYABLE / FATAL
-                ErrorClassifier.Verdict verdict = errorClassifier.classify("http", status, responseResult, null);
+                ErrorClassifier.Verdict verdict = errorClassifier.classify(task, "http", status, responseResult, null);
                 //显式配置的 error 关键字属于业务约定的失败标记，直接判为不可重试
                 if (error != null && responseResult != null && responseResult.contains(error.toString())) {
                     verdict = new ErrorClassifier.Verdict(ErrorClass.FATAL, error.toString(),
@@ -248,7 +248,7 @@ public class HttpTaskExecutor implements Execute {
             } catch (Exception e) {
                 if (task != null) {
                     //异常场景无状态码，由分类器按 retryable-exceptions 前缀 + default-action 兜底
-                    ErrorClassifier.Verdict verdict = errorClassifier.classify("http", e);
+                    ErrorClassifier.Verdict verdict = errorClassifier.classify(task, "http", e);
                     task.setErrorClass(verdict.getErrorClass().name());
                     task.setErrorCode(verdict.getCode());
                     task.setErrorMessage(verdict.getMessage());

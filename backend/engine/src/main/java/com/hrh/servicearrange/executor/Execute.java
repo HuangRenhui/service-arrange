@@ -82,7 +82,7 @@ public interface Execute {
                     InstLog.LEVEL_ERRO, "任务超时 " + timeoutMs + "ms"));
         } catch (Exception e) {
             //执行器未产出分类时的兜底：按 retryable-exceptions 前缀匹配，未命中则按 default-action
-            ErrorClassifier.Verdict verdict = SpringUtil.getBean(ErrorClassifier.class).classify(null, e);
+            ErrorClassifier.Verdict verdict = SpringUtil.getBean(ErrorClassifier.class).classify(task, null, e);
             task.setErrorClass(verdict.getErrorClass().name());
             task.setErrorCode(verdict.getCode());
             task.setErrorMessage(verdict.getMessage());

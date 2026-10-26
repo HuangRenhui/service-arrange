@@ -54,13 +54,13 @@ public class WebServiceOperateExecutor implements Execute {
             task.getOutputs().setContentType("application/xml");
             task.getOutputs().setValue(body);
             //按 task.error-mapping.webservice 判定：默认 2xx 成功，可配 soap-fault 识别 SOAP 错误码
-            ErrorClassifier.Verdict verdict = errorClassifier.classify("webservice", resp.getStatus(), body, null);
+            ErrorClassifier.Verdict verdict = errorClassifier.classify(task, "webservice", resp.getStatus(), body, null);
             task.setErrorClass(verdict.getErrorClass().name());
             task.setErrorCode(verdict.getCode());
             task.setErrorMessage(verdict.getMessage());
             task.setState(verdict.isSuccess() ? Task.STATE_SUCCESS : Task.STATE_FAIL);
         } catch (Exception e) {
-            ErrorClassifier.Verdict verdict = errorClassifier.classify("webservice", e);
+            ErrorClassifier.Verdict verdict = errorClassifier.classify(task, "webservice", e);
             task.setErrorClass(verdict.getErrorClass().name());
             task.setErrorCode(verdict.getCode());
             task.setErrorMessage(verdict.getMessage());

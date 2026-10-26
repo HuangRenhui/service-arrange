@@ -41,7 +41,7 @@ public class DubboOperateExecutor implements Execute {
                 task.getOutputs().setContentType("application/json");
                 task.getOutputs().setValue(body);
                 //按 task.error-mapping.dubbo 判定：默认 2xx 成功，可配 body-code 识别泛化错误码
-                ErrorClassifier.Verdict verdict = errorClassifier.classify("dubbo", resp.getStatus(), body, null);
+                ErrorClassifier.Verdict verdict = errorClassifier.classify(task, "dubbo", resp.getStatus(), body, null);
                 task.setErrorClass(verdict.getErrorClass().name());
                 task.setErrorCode(verdict.getCode());
                 task.setErrorMessage(verdict.getMessage());
@@ -56,7 +56,7 @@ public class DubboOperateExecutor implements Execute {
             instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO,
                     "Dubbo 泛化调用未配置 HTTP 网关地址（url/serviceUrl），请填写可调用的 HTTP 入口"));
         } catch (Exception e) {
-            ErrorClassifier.Verdict verdict = errorClassifier.classify("dubbo", e);
+            ErrorClassifier.Verdict verdict = errorClassifier.classify(task, "dubbo", e);
             task.setErrorClass(verdict.getErrorClass().name());
             task.setErrorCode(verdict.getCode());
             task.setErrorMessage(verdict.getMessage());

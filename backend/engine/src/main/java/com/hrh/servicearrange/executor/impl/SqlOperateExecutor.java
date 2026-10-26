@@ -89,7 +89,7 @@ public class SqlOperateExecutor implements Execute {
             task.setState(Task.STATE_SUCCESS);
         } catch (Exception e) {
             //按 task.error-mapping.sql 的 sqlstate 分类：40001/40P01 等可重试，42xxx/07xxx 等不可重试
-            ErrorClassifier.Verdict verdict = errorClassifier.classify("sql", e);
+            ErrorClassifier.Verdict verdict = errorClassifier.classify(task, "sql", e);
             task.setErrorClass(verdict.getErrorClass().name());
             task.setErrorCode(verdict.getCode());
             task.setErrorMessage(verdict.getMessage());

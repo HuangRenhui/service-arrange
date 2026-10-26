@@ -1,11 +1,15 @@
 package com.hrh.servicearrange.executor;
 
 import cn.hutool.json.JSON;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.hrh.servicearrange.config.ErrorMappingProperties;
+import com.hrh.servicearrange.entity.Task;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,27 +53,39 @@ public class ErrorClassifier {
      * @return 分类结果（含归一化错误码与描述）
      */
     public Verdict classify(String protocol, Integer status, String body, Throwable ex) {
-        ErrorMappingProperties.ProtocolRule rule = props.rule(protocol);
-        if (rule == null) {
+        return classify(null, protocol, status, body, ex);
+    }
+
+    /**
+     * 对一次调用结果做三态分类，并叠加节点级覆盖。
+     * <p>
+     * 节点 {@code data.errorMapping} 与全局 {@code task.error-mapping.protocols.<protocol>} 同构，
+     * 采用「节点表优先、全局表兜底」的两层判定：节点只声明差异码即可，未声明的码仍按全局规则处理。
+     *
+     * @param task     当前任务，用于读取节点级覆盖；为 null 时只用全局配置
+     * @param protocol 协议名：http / dubbo / webservice / sql / script
+     * @param status   主判据数值：HTTP 状态码、脚本退出码，无则为 null
+     * @param body     响应体，用于 body-jsonpath / soap-fault
+     * @param ex       调用异常，用于 sqlstate 与异常前缀兜底，无则为 null
+     * @return 分类结果（含归一化错误码与描述）
+     */
+    public Verdict classify(Task task, String protocol, Integer status, String body, Throwable ex) {
+        ErrorMappingProperties.ProtocolRule base = props.rule(protocol);
+        ErrorMappingProperties.ProtocolRule override = nodeOverride(task);
+        if (base == null && override == null) {
             return fallback(errCode(status), ex);
         }
 
-        String code = extract(rule.getMatch(), rule, status, body, ex);
-        ErrorClass primary = matchThree(rule.getSuccess(), rule.getRetryable(), rule.getFatal(), code);
+        String code = extract(pickMatch(base, override), pickPath(base, override), status, body, ex);
+        ErrorClass primary = matchBoth(base, override, code);
 
         // 主判据成功时，再看业务码：兼容 HTTP 200 但 body.code 非 0 的厂商形态
         if (primary == ErrorClass.SUCCESS) {
-            ErrorMappingProperties.BodyCode bodyCode = rule.getBodyCode();
-            if (bodyCode != null && bodyCode.getPath() != null && !bodyCode.getPath().isEmpty()) {
-                String bizCode = jsonpath(body, bodyCode.getPath());
-                if (bizCode != null) {
-                    ErrorClass second = matchThree(bodyCode.getSuccess(), bodyCode.getRetryable(),
-                            bodyCode.getFatal(), bizCode);
-                    return new Verdict(second == null ? defaultClass() : second, bizCode,
-                            describe(protocol, bizCode, ex));
-                }
+            Verdict biz = judgeBodyCode(override, body, protocol, ex);
+            if (biz == null) {
+                biz = judgeBodyCode(base, body, protocol, ex);
             }
-            return new Verdict(ErrorClass.SUCCESS, code, null);
+            return biz != null ? biz : new Verdict(ErrorClass.SUCCESS, code, null);
         }
 
         if (primary != null) {
@@ -102,15 +118,152 @@ public class ErrorClassifier {
     }
 
     /**
+     * 便捷重载：仅异常场景，并叠加节点级覆盖。
+     *
+     * @param task     当前任务
+     * @param protocol 协议名
+     * @param ex       异常
+     * @return 分类结果
+     */
+    public Verdict classify(Task task, String protocol, Throwable ex) {
+        return classify(task, protocol, null, null, ex);
+    }
+
+    /**
+     * 码表两层匹配：节点表命中即定论，未命中再查全局表。
+     */
+    private ErrorClass matchBoth(ErrorMappingProperties.ProtocolRule base,
+                                 ErrorMappingProperties.ProtocolRule override, String code) {
+        if (override != null) {
+            ErrorClass hit = matchThree(override.getSuccess(), override.getRetryable(),
+                    override.getFatal(), code);
+            if (hit != null) {
+                return hit;
+            }
+        }
+        if (base == null) {
+            return null;
+        }
+        return matchThree(base.getSuccess(), base.getRetryable(), base.getFatal(), code);
+    }
+
+    /**
+     * 业务码二级判定。
+     *
+     * @return 命中或有业务码但未配置时返回定论；未配置 body-code 或取不到业务码时返回 null，交给下一层
+     */
+    private Verdict judgeBodyCode(ErrorMappingProperties.ProtocolRule rule, String body,
+                                  String protocol, Throwable ex) {
+        if (rule == null || rule.getBodyCode() == null || !hasText(rule.getBodyCode().getPath())) {
+            return null;
+        }
+        ErrorMappingProperties.BodyCode bc = rule.getBodyCode();
+        String bizCode = jsonpath(body, bc.getPath());
+        if (bizCode == null) {
+            return null;
+        }
+        ErrorClass hit = matchThree(bc.getSuccess(), bc.getRetryable(), bc.getFatal(), bizCode);
+        return new Verdict(hit == null ? defaultClass() : hit, bizCode, describe(protocol, bizCode, ex));
+    }
+
+    /**
+     * 取判据方式：节点优先，其次全局，最后默认 status。
+     */
+    private String pickMatch(ErrorMappingProperties.ProtocolRule base,
+                             ErrorMappingProperties.ProtocolRule override) {
+        if (override != null && hasText(override.getMatch())) {
+            return override.getMatch();
+        }
+        if (base != null && hasText(base.getMatch())) {
+            return base.getMatch();
+        }
+        return "status";
+    }
+
+    /**
+     * 取业务码 jsonpath：节点 path 优先，其次全局 path，再退到各自的 body-code path。
+     */
+    private String pickPath(ErrorMappingProperties.ProtocolRule base,
+                            ErrorMappingProperties.ProtocolRule override) {
+        if (override != null && hasText(override.getPath())) {
+            return override.getPath();
+        }
+        if (base != null && hasText(base.getPath())) {
+            return base.getPath();
+        }
+        if (override != null && override.getBodyCode() != null && hasText(override.getBodyCode().getPath())) {
+            return override.getBodyCode().getPath();
+        }
+        if (base != null && base.getBodyCode() != null && hasText(base.getBodyCode().getPath())) {
+            return base.getBodyCode().getPath();
+        }
+        return null;
+    }
+
+    /**
+     * 从节点入参中取 {@code errorMapping}，未配置或结构非法时返回 null（不影响全局配置）。
+     * <p>
+     * 手工解析而非 {@code JSONUtil.toBean}：DSL 里常见 {@code "success":[200,204]} 这类数字字面量，
+     * toBean 到 {@code List<String>} 会保留 Integer 元素，后续按字符串比较即抛 ClassCastException。
+     */
+    private ErrorMappingProperties.ProtocolRule nodeOverride(Task task) {
+        if (task == null || task.getInputs() == null || task.getInputs().isEmpty()) {
+            return null;
+        }
+        try {
+            JSONObject inputs = JSONUtil.parseObj(task.getInputs());
+            JSONObject node = inputs.getJSONObject("errorMapping");
+            if (node == null || node.isEmpty()) {
+                return null;
+            }
+            ErrorMappingProperties.ProtocolRule rule = new ErrorMappingProperties.ProtocolRule();
+            rule.setMatch(node.getStr("match"));
+            rule.setPath(node.getStr("path"));
+            rule.setSuccess(strList(node.getJSONArray("success")));
+            rule.setRetryable(strList(node.getJSONArray("retryable")));
+            rule.setFatal(strList(node.getJSONArray("fatal")));
+            JSONObject bodyCode = node.getJSONObject("bodyCode");
+            if (bodyCode != null && !bodyCode.isEmpty()) {
+                ErrorMappingProperties.BodyCode bc = new ErrorMappingProperties.BodyCode();
+                bc.setPath(bodyCode.getStr("path"));
+                bc.setSuccess(strList(bodyCode.getJSONArray("success")));
+                bc.setRetryable(strList(bodyCode.getJSONArray("retryable")));
+                bc.setFatal(strList(bodyCode.getJSONArray("fatal")));
+                rule.setBodyCode(bc);
+            }
+            return rule;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 把 JSON 数组统一转成字符串列表，兼容数字/布尔字面量。
+     */
+    private List<String> strList(JSONArray array) {
+        List<String> list = new ArrayList<>();
+        if (array == null || array.isEmpty()) {
+            return list;
+        }
+        for (Object item : array) {
+            if (item != null) {
+                list.add(String.valueOf(item));
+            }
+        }
+        return list;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    /**
      * 按 match 方式提取错误码。
      */
-    private String extract(String match, ErrorMappingProperties.ProtocolRule rule,
-                           Integer status, String body, Throwable ex) {
+    private String extract(String match, String path, Integer status, String body, Throwable ex) {
         String mode = match == null ? "status" : match;
         switch (mode) {
             case "body-jsonpath": {
-                String path = rule.getPath() != null ? rule.getPath()
-                        : (rule.getBodyCode() == null ? null : rule.getBodyCode().getPath());
                 String bizCode = jsonpath(body, path);
                 //响应体取不到业务码时退回状态码，避免网关 5xx 返回非 JSON 时被误判为成功或丢失可重试语义
                 return bizCode != null ? bizCode : errCode(status);
