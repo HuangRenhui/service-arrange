@@ -1,7 +1,5 @@
 package com.hrh.servicearrange.mq;
 
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.hrh.servicearrange.config.BackpressureProperties;
 import com.hrh.servicearrange.dao.TaskDao;
 import com.hrh.servicearrange.entity.Task;
@@ -11,22 +9,17 @@ import com.hrh.servicearrange.utils.SpringBeanUtils;
 import com.hrh.servicearrange.vo.Task4MQ;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitHandler;
-import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.annotation.EnableBinding;
-import org.springframework.cloud.stream.annotation.StreamListener;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 /**
- * 任务消费，执行具体任务
+ * 任务执行入口：执行具体任务。
+ * <p>
+ * 不再直接绑定 MQ 通道——MQ 监听在 {@link MqTaskRunListener}（仅在 mq / auto 模式装配），
+ * 本地直连由 {@link TaskDispatcher} 调用 {@link #runLocal(Task4MQ)}。
  */
 @Slf4j
 @Component
-@EnableBinding(MqChannelProcessor.class)
 public class TaskRunConsumer {
 
     @Autowired
@@ -36,24 +29,15 @@ public class TaskRunConsumer {
     @Autowired
     private BackpressureProperties backpressure;
 
-    @StreamListener(target = MqChannelProcessor.TASK_RUN_INPUT)
-    @RabbitHandler
-    public void listenInstTaskResult(Message<?> message,
-                                     @Header(AmqpHeaders.CHANNEL) Channel channel,
-                                     @Header(AmqpHeaders.DELIVERY_TAG) Long deliveryTag) {
-        System.out.println("TaskRunConsumer 接收到【实例任务执行】状态信息  : " + message.toString());
-        JSONObject jsonObj = JSONUtil.parseObj(message.getPayload());
-
-        //手工ack
-        String id = jsonObj.get("id", String.class);
-        String type = jsonObj.get("type", String.class);
-        if (StringUtils.isEmpty(id) || StringUtils.isEmpty(type)) {
-            taskProductor.ackTask(deliveryTag, channel, "ack，params can't be null:" + jsonObj.toString());
-            return;
-        }
-        run(new Task4MQ(id, type), channel, deliveryTag);
+    /**
+     * 本地直连入口：不经过 MQ，没有 channel / deliveryTag。
+     * <p>
+     * ack / nack 内部已判空 channel，因此传 null 安全；本地模式不做 MQ 重投，
+     * 失败重试由 {@code Task.RetryRules} / {@code runNackTimes} 与结果推进逻辑控制。
+     */
+    public void runLocal(Task4MQ task4MQ) {
+        run(task4MQ, null, null);
     }
-
 
     public void run(Task4MQ task4MQ, Channel channel, Long deliveryTag) {
         Task task = null;
@@ -81,7 +65,7 @@ public class TaskRunConsumer {
                 taskProductor.nAckTask(deliveryTag, channel, "error run: no executor for type " + task.getType());
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("run task fail, taskId={}", task4MQ.getId(), e);
             if (task != null) {
                 int nack = task.getRunNackTimes() == null ? 0 : task.getRunNackTimes();
                 task.setRunNackTimes(nack + 1);

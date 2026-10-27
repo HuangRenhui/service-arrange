@@ -8,7 +8,6 @@ package com.hrh.servicearrange.mq;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
-import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.hrh.servicearrange.config.BackpressureProperties;
 import com.hrh.servicearrange.config.OrchestrationProperties;
@@ -29,18 +28,11 @@ import com.hrh.servicearrange.parser.annotation.TaskType;
 import com.hrh.servicearrange.service.ITaskService;
 import com.hrh.servicearrange.utils.JsonSchemaUtil;
 import com.rabbitmq.client.Channel;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.CreateMode;
-import org.springframework.amqp.rabbit.annotation.RabbitHandler;
-import org.springframework.amqp.support.AmqpHeaders;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.annotation.EnableBinding;
-import org.springframework.cloud.stream.annotation.StreamListener;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -48,16 +40,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 任务执行完后继续处理下一个节点流程
+ * 任务执行完后继续处理下一个节点流程。
+ * <p>
+ * 不再直接绑定 MQ 通道——MQ 监听在 {@link MqTaskResultListener}（仅在 mq / auto 模式装配），
+ * 本地直连由 {@link TaskDispatcher} 调用 {@link #runLocal(String, String, String, Task.Result, Task.RetryRules)}。
  */
+@Slf4j
 @Component
-@EnableBinding(MqChannelProcessor.class)
 public class TaskResultConsumer {
     @Autowired
     private TaskProductor taskProductor;
 
-    @Autowired
-    CuratorFramework curatorFramework;
     @Autowired
     private TaskDao taskDao;
     @Autowired
@@ -73,31 +66,14 @@ public class TaskResultConsumer {
     @Autowired
     private OrchestrationProperties orchestration;
 
-    @StreamListener(target = MqChannelProcessor.TASK_RESULT_INPUT)
-    @RabbitHandler
-    public void listenInstTaskResult(Message<?> message,
-                                     @Header(AmqpHeaders.CHANNEL) Channel channel,
-                                     @Header(AmqpHeaders.DELIVERY_TAG) Long deliveryTag) {
-        System.out.println("【task.result_queue_name】receive:" + message.toString());
-        JSONObject jsonObject = JSONUtil.parseObj(message.getPayload());
-        String id = jsonObject.getStr("id");
-        String instId = jsonObject.getStr("instId");
-        String state = jsonObject.getStr("state");
-        Task.Result outputs = JSONUtil.toBean(jsonObject.getJSONObject("outputs"), Task.Result.class);
-        Task.RetryRules retryRules = JSONUtil.toBean(jsonObject.getJSONObject("retryRules"), Task.RetryRules.class);
-        String lockNode = null;
-        try {
-            lockNode = curatorFramework.create().withMode(CreateMode.EPHEMERAL)
-                    .forPath(Inst.ZK_LOCK_PREFIX + instId, instId.getBytes());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        if (StrUtil.isNotEmpty(lockNode)) {
-            run(id, instId, state, outputs, retryRules, channel, deliveryTag, lockNode);
-        } else {
-            //抢锁失败：走带次数上限与退避的重排队，避免无限 requeue 导致的消息热点空转
-            taskProductor.nAckLockTask(id, instId, deliveryTag, channel, "get inst lock fail,do nack.");
-        }
+    /**
+     * 本地直连入口：进程内直接推进实例状态，不依赖 MQ。
+     * <p>
+     * 实例串行由 {@link TaskDispatcher} 的 instId 分片线程保证，因此这里不走 ZK 抢锁
+     * （本地降级时 ZooKeeper 也可能同时不可用）。
+     */
+    public void runLocal(String id, String instId, String state, Task.Result outputs, Task.RetryRules retryRules) {
+        run(id, instId, state, outputs, retryRules, null, null, null);
     }
 
     /**
@@ -432,15 +408,14 @@ public class TaskResultConsumer {
             inst.getWaitingNodes().remove(task.getNodeId());
             taskProductor.ackTask(instId, deliveryTag, channel, "send next task success, do ack.", lockNode);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("send next task fail, instId={}, taskId={}", instId,
+                    task == null ? null : task.getId(), e);
             inst.setState(Inst.STATE_FAIL);
             instDao.save(inst);
             taskProductor.nAckTask(instId, deliveryTag, channel, "before send next task fail, do nack.", lockNode);
         } finally {
-            System.out.println("finally..........do........inst:" + inst.getId());
-            if (null != task) {
-                System.out.println("finally..........do........task:" + JSONUtil.toJsonPrettyStr(task));
-            }
+            log.debug("send next task finished, instId={}, taskId={}", inst.getId(),
+                    task == null ? null : task.getId());
         }
     }
 

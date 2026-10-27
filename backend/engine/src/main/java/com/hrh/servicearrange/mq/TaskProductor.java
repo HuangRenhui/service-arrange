@@ -7,12 +7,10 @@ import com.hrh.servicearrange.dao.TaskDao;
 import com.hrh.servicearrange.entity.Inst;
 import com.hrh.servicearrange.entity.InstLog;
 import com.hrh.servicearrange.entity.Task;
-import com.hrh.servicearrange.vo.Task4MQ;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -30,14 +28,6 @@ import java.util.Date;
 @Component
 public class TaskProductor {
 
-    @Value("${task.result_queue_name}")
-    private String taskResult_queue_name;
-    @Value("${task.run_queue_name}")
-    private String taskRun_queue_name;
-    @Autowired
-    private TaskRunConsumer taskRunConsumer;
-    @Autowired
-    private TaskResultConsumer taskResultConsumer;
     @Autowired
     private InstLogDao instLogDao;
     @Autowired
@@ -48,19 +38,30 @@ public class TaskProductor {
     @Autowired
     CuratorFramework curatorFramework;
 
+    /**
+     * 投递决策统一交给 {@link TaskDispatcher}：按 {@code task.dispatch.mode} 走 MQ 或本地直连
+     */
+    @Autowired
+    private TaskDispatcher taskDispatcher;
+
+    /**
+     * 投递任务结果，由结果处理链路异步消费（MQ 或本地直连）。
+     *
+     * @param task 已执行完成的任务
+     */
     public void sendTaskResult(Task task) {
-        //日志记录
-        InstLog instLog = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO);
-        //消费
-        taskResultConsumer.run(task.getId(), task.getInstId(), task.getState(), task.getOutputs(), task.getRetryRules(), null, null, null);
-        instLogDao.save(instLog);
+        taskDispatcher.dispatchResult(task);
+        instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO));
     }
 
+    /**
+     * 投递待执行任务，由任务执行链路异步消费（MQ 或本地直连）。
+     *
+     * @param task 待执行任务
+     */
     public void sendTaskRun(Task task) {
-        InstLog instLog = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO);
-        Task4MQ task4MQ = new Task4MQ(task.getId(), task.getType());
-        taskRunConsumer.run(task4MQ, null, null);
-        instLogDao.save(instLog);
+        taskDispatcher.dispatchRun(task);
+        instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO));
     }
 
     /**
