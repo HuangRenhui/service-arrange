@@ -5,7 +5,8 @@
 (function (global) {
   'use strict';
 
-  var TYPES = ['string', 'number', 'integer', 'boolean', 'object', 'array'];
+  /* file：声明为文件入参，运行时以 multipart 文件域提交，后端落盘后回填 local:// 地址 */
+  var TYPES = ['string', 'number', 'integer', 'boolean', 'object', 'array', 'file'];
 
   /** 由字段行数组生成 JSON Schema 对象 */
   function buildSchema(rows) {

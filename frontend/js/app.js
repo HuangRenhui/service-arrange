@@ -307,8 +307,8 @@
       var typeMap = SchemaUtil.getStartParamsTypeMap(dsl);
       var keys = Object.keys(typeMap);
       if (keys.length) {
-        self.askParams(keys, typeMap, function (inputs) {
-          self.startRun(inst, inputs);
+        self.askParams(keys, typeMap, function (inputs, files) {
+          self.startRun(inst, inputs, files);
         });
       } else {
         self.startRun(inst, {});
@@ -319,6 +319,10 @@
     askParams: function (keys, typeMap, onDone) {
       var rows = keys.map(function (k) {
         var t = typeMap[k];
+        if (t === 'file') {
+          return '<div class="form-row"><label>' + esc(k) + '</label>'
+            + '<input type="file" data-p="' + esc(k) + '" data-file="1"></div>';
+        }
         if (t === 'boolean') {
           return '<div class="form-row"><label>' + esc(k) + '</label>'
             + '<select data-p="' + esc(k) + '"><option value="false">false</option><option value="true">true</option></select></div>';
@@ -335,12 +339,18 @@
         readOnly: true, hideOk: false, okText: '开始运行',
         onOk: function () {
           var inputs = {};
+          var files = {};
           document.querySelectorAll('#modalMsg [data-p]').forEach(function (el) {
             var k = el.dataset.p;
+            /* 文件域单独收集，由 multipart 提交；其余字段按 schema 类型转换 */
+            if (el.dataset.file === '1') {
+              if (el.files && el.files[0]) files[k] = el.files[0];
+              return;
+            }
             if (el.value === '') return;
             inputs[k] = SchemaUtil.castValue(el.value, typeMap[k] || 'string');
           });
-          onDone(inputs);
+          onDone(inputs, files);
         }
       });
       var msg = document.getElementById('modalMsg');
@@ -350,7 +360,7 @@
     },
 
     /** 创建运行记录；已配置后端时走真实 run 接口 */
-    startRun: function (inst, inputs) {
+    startRun: function (inst, inputs, files) {
       var self = this;
       if (Api.base()) {
         var idem = 'web-' + inst.id + '-' + Date.now();
@@ -360,6 +370,7 @@
           sync: false,
           instName: inst.name,
           params: inputs,
+          files: files,
           idempotencyKey: idem,
           traceId: traceId
         }).then(function (res) {

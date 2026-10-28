@@ -282,7 +282,10 @@
     },
     remove: function (instId, runId) {
       if (!useRemote()) { Store.removeRun(instId, runId); return Promise.resolve({ ok: true, local: true }); }
-      return Promise.resolve({ ok: true, body: 'success' });
+      /* 后端删除实例时级联清理任务、日志与实例目录下的本地文件 */
+      return request('/inst/delete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([runId])
+      });
     }
   };
 
@@ -309,6 +312,13 @@
     if (form.instName) fd.append('servea_instName', form.instName);
     if (form.instId) fd.append('servea_instId', form.instId);
     if (form.idempotencyKey) fd.append('servea_idempotencyKey', form.idempotencyKey);
+    /* 文件入参：schema 中 type=file 的字段，以文件域原样提交 */
+    var files = form.files || {};
+    Object.keys(files).forEach(function (k) {
+      var f = files[k];
+      if (!f) return;
+      fd.append(k, f, f.name || k);
+    });
     var params = form.params || {};
     Object.keys(params).forEach(function (k) {
       var v = params[k];

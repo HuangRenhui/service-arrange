@@ -1,5 +1,6 @@
 package com.hrh.servicearrange.executor.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
@@ -16,13 +17,18 @@ import com.hrh.servicearrange.entity.Task;
 import com.hrh.servicearrange.executor.ErrorClass;
 import com.hrh.servicearrange.executor.ErrorClassifier;
 import com.hrh.servicearrange.executor.Execute;
+import com.hrh.servicearrange.files.LocalFileStorage;
 import com.hrh.servicearrange.parser.annotation.CellType;
 import com.hrh.servicearrange.utils.JsonSchemaUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,8 +58,19 @@ public class HttpTaskExecutor implements Execute {
     /**
      * HTTP 读取超时：单位毫秒。避免下游挂起导致消费线程被无限期占用（消费并发默认为 1，会阻塞整条链路）
      */
+    /**
+     * 本类方法内存在同名局部变量 {@code log}（InstLog），故日志器单独命名
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpTaskExecutor.class);
+
     @Value("${task.http.read-timeout:30000}")
     private int readTimeout;
+
+    /**
+     * 远程文件作为上传源时的最大字节数，防止超大文件写满磁盘（与本地存储上限同口径）
+     */
+    @Value("${servea.file.max-size:104857600}")
+    private long maxDownloadSize;
 
     /**
      * 错误码分类器：把 HTTP 状态码 / 响应体业务码映射为 SUCCESS / RETRYABLE / FATAL
@@ -61,10 +78,18 @@ public class HttpTaskExecutor implements Execute {
     @Autowired
     private ErrorClassifier errorClassifier;
 
+    /**
+     * 实例文件本地存储：解析 {@code local://} 地址，远程地址下载副本不落实例目录
+     */
+    @Autowired
+    private LocalFileStorage fileStorage;
+
     @Override
     public Task runProcess(Task task, Inst inst, TaskDao taskDao, InstLogDao instLogDao) {
         //需要文件上传的文件名集合
         Map<String, List<File>> fileListMap = new HashMap<>();
+        //远程地址下载的临时文件，仅这些在 finally 中删除；实例目录里的正式文件必须保留
+        List<File> tempFiles = new ArrayList<>();
         InstLog log = new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO, task.getNodeName() + "节点开始执行.....");
         instLogDao.save(log);
         if (task != null) {
@@ -115,9 +140,13 @@ public class HttpTaskExecutor implements Execute {
                 String bodyParamStr = null;
                 if (input.containsKey("reqBodyForm")) {
                     List<KeyValueDto> reqBodyForm = data.getReqBodyForm();
-                    bodyParamCount = reqBodyForm == null ? 0 : reqBodyForm.stream().filter(bean -> bean.getValue() != null && !bean.getType().equals("file")).count();
+                    bodyParamCount = reqBodyForm == null ? 0 : reqBodyForm.stream()
+                            .filter(bean -> bean != null && bean.getValue() != null && !"file".equalsIgnoreCase(bean.getType()))
+                            .count();
                     if (bodyParamCount > 0) {
-                        inBodyParam = reqBodyForm.stream().filter(bean -> bean.getValue() != null && !bean.getType().equals("file")).collect(Collectors.toMap(t -> t.getKey(), t -> t.getValue().toString()));
+                        inBodyParam = reqBodyForm.stream()
+                                .filter(bean -> bean != null && bean.getValue() != null && !"file".equalsIgnoreCase(bean.getType()))
+                                .collect(Collectors.toMap(t -> t.getKey(), t -> t.getValue().toString(), (a, b) -> b));
                         bodyParamStr = JSONUtil.toJsonStr(inBodyParam);
                     }
                 }
@@ -163,51 +192,65 @@ public class HttpTaskExecutor implements Execute {
                         inHeaderParam = reqHeaders.stream().filter(bean -> bean.getValue() != null).collect(Collectors.toMap(t -> t.getKey(), t -> t.getValue().toString()));
                     }
                 }
-                HttpResponse httpResponse = null;
                 HttpRequest httpRequest = HttpUtil.createRequest(getMethod(requestType), inPathParamUrl.toString()).addHeaders(inHeaderParam);
                 //设置连接与读取超时，防止下游慢响应或无响应时无限期占用消费线程
                 httpRequest = httpRequest.timeout(readTimeout).setConnectionTimeout(connectTimeout);
                 if (bodyParamStr != null && !bodyParamStr.equals("{}")) {
                     httpRequest = httpRequest.body(bodyParamStr);
                 }
-                //获取文件：根据文件地址获取到文件流，封装到File中，缓存到本地中
+                //收集需要上传的文件：local:// 直接使用实例目录中的文件，http(s) 下载为临时副本
                 JSONObject fileUrl = jsonObject.getJSONObject("fileUrl");
                 if (fileUrl != null) {
-                    fileUrl.keySet().stream().forEach(key -> {
+                    for (String key : fileUrl.keySet()) {
                         List<File> fileList = new ArrayList<>();
-                        //多个文件
                         JSONArray array = fileUrl.getJSONArray(key);
-                        List<String> urlList = array.toList(String.class);
-                        urlList.forEach(u -> {
-                            int index = u.lastIndexOf("/");
-                            int length = u.length();
-                            String fileName = u.substring(index + 1, length);
-                            //获取文件添加到fileList中
-                            // FileUtil.writeFromStream(inputStream, file);
-                            // fileList.add(file);
-                        });
+                        if (array != null) {
+                            for (String u : array.toList(String.class)) {
+                                File file = toUploadFile(u, tempFiles);
+                                if (file != null) {
+                                    fileList.add(file);
+                                } else if (StrUtil.isNotBlank(u)) {
+                                    LOGGER.warn("upload file not resolved, taskId={}, url={}", task.getId(), u);
+                                }
+                            }
+                        }
                         fileListMap.put(key, fileList);
-                    });
+                    }
                 }
                 //添加文件上传
                 List<KeyValueDto> reqBodyForm = data.getReqBodyForm();
-                if (reqBodyForm != null && reqBodyForm.size() > 0) {
-                    for (int i = 0; i < reqBodyForm.size(); i++) {
-                        KeyValueDto keyValueDto = reqBodyForm.get(i);
-                        if (keyValueDto.getType().equals("file") && fileListMap != null && fileListMap.size() > 0) {
-                            if (fileListMap.get(keyValueDto.getKey()).size() == 1) {
-                                File f = fileListMap.get(keyValueDto.getKey()).get(0);
-                                httpRequest = httpRequest.form(keyValueDto.getKey(), f);
-                            } else {
-                                httpRequest = httpRequest.form(keyValueDto.getKey(), fileListMap.get(keyValueDto.getKey()));
+                if (reqBodyForm != null && !reqBodyForm.isEmpty()) {
+                    for (KeyValueDto keyValueDto : reqBodyForm) {
+                        if (keyValueDto == null || StrUtil.isBlank(keyValueDto.getKey())) {
+                            continue;
+                        }
+                        if ("file".equalsIgnoreCase(keyValueDto.getType())) {
+                            List<File> files = fileListMap.get(keyValueDto.getKey());
+                            if (files == null || files.isEmpty()) {
+                                //fileUrl 未声明时，允许 reqBodyForm 的 value 直接给文件地址
+                                File single = toUploadFile(keyValueDto.getValue() == null
+                                        ? null : String.valueOf(keyValueDto.getValue()), tempFiles);
+                                if (single != null) {
+                                    files = new ArrayList<>();
+                                    files.add(single);
+                                }
                             }
-                        } else {
+                            if (files == null || files.isEmpty()) {
+                                LOGGER.warn("file param without file, skip, taskId={}, key={}", task.getId(), keyValueDto.getKey());
+                                continue;
+                            }
+                            if (files.size() == 1) {
+                                httpRequest = httpRequest.form(keyValueDto.getKey(), files.get(0));
+                            } else {
+                                httpRequest = httpRequest.form(keyValueDto.getKey(), files);
+                            }
+                        } else if (keyValueDto.getValue() != null) {
                             httpRequest = httpRequest.form(keyValueDto.getKey(), keyValueDto.getValue());
                         }
                     }
                 }
-                //执行http请求
-                httpResponse = httpRequest.execute();
+                //执行http请求：try-with-resources 确保响应流与连接一定释放，避免句柄泄漏
+                try (HttpResponse httpResponse = httpRequest.execute()) {
                 //获取返回结果
                 String responseResult = httpResponse.body();
                 //获取http请求状态：200、500、404
@@ -245,6 +288,7 @@ public class HttpTaskExecutor implements Execute {
                 }
                 result.setHeaderParams(headerParams);
                 task.setOutputs(result);
+                }
             } catch (Exception e) {
                 if (task != null) {
                     //异常场景无状态码，由分类器按 retryable-exceptions 前缀 + default-action 兜底
@@ -257,18 +301,59 @@ public class HttpTaskExecutor implements Execute {
                     instLogDao.save(log);
                     task.setState(Task.STATE_FAIL);
                 }
-                e.printStackTrace();
+                LOGGER.error("http task execute fail, taskId={}", task == null ? null : task.getId(), e);
             } finally {
-                if (fileListMap != null && !fileListMap.isEmpty()) {
-                    fileListMap.values().stream().filter(list -> list != null).forEach(list -> list.forEach(f -> {
-                        if (f != null) {
-                            f.delete();
-                        }
-                    }));
-                }
+                //只清理远程下载的临时副本，实例目录中的正式文件由实例删除流程级联清理
+                tempFiles.stream().filter(f -> f != null && f.exists()).forEach(f -> {
+                    if (!f.delete()) {
+                        LOGGER.warn("delete temp upload file fail, path={}", f.getAbsolutePath());
+                    }
+                });
+                fileListMap.clear();
             }
         }
         return task;
+    }
+
+    /**
+     * 把文件地址解析为可上传的 {@link File}。
+     * <ul>
+     *     <li>{@code local://} ：实例目录中的正式文件，直接使用；</li>
+     *     <li>{@code http(s)://} ：下载为临时副本，登记到 {@code tempFiles} 由调用方清理；</li>
+     *     <li>其它：按本地绝对 / 相对路径处理。</li>
+     * </ul>
+     *
+     * @return 解析不到时返回 {@code null}
+     */
+    private File toUploadFile(String uri, List<File> tempFiles) {
+        if (StrUtil.isBlank(uri)) {
+            return null;
+        }
+        Path local = fileStorage.resolveIfSupported(uri);
+        if (local != null) {
+            return Files.isRegularFile(local) ? local.toFile() : null;
+        }
+        if (uri.startsWith("http://") || uri.startsWith("https://")) {
+            try {
+                String fileName = uri.substring(uri.lastIndexOf('/') + 1);
+                File temp = File.createTempFile("servea-upload-", StrUtil.isBlank(fileName) ? ".tmp" : "-" + fileName);
+                HttpUtil.downloadFile(uri, temp);
+                if (temp.length() > maxDownloadSize) {
+                    LOGGER.warn("remote upload file exceeds limit, url={}, size={}, limit={}", uri, temp.length(), maxDownloadSize);
+                    if (!temp.delete()) {
+                        LOGGER.warn("delete oversized temp file fail, path={}", temp.getAbsolutePath());
+                    }
+                    return null;
+                }
+                tempFiles.add(temp);
+                return temp;
+            } catch (Exception e) {
+                LOGGER.error("download upload file fail, url={}", uri, e);
+                return null;
+            }
+        }
+        File file = new File(uri);
+        return file.isFile() ? file : null;
     }
 
     private String encodeQuery(String raw) {
