@@ -20,6 +20,13 @@ public interface TaskDao extends MongoRepository<Task, String> {
 
     List<Task> findByInstId(String instId);
 
+    /**
+     * 删除实例下的全部任务（实例级联删除用）
+     *
+     * @return 删除的任务数
+     */
+    long deleteByInstId(String instId);
+
     @Query(value = "{ 'instId' : ?0 ,'type' : ?1 }")
     Task findStartTask(String instId, String type);
 }

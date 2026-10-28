@@ -19,7 +19,10 @@ import java.util.*;
  */
 @Document(collection = Inst.TABLE_NAME)
 @CompoundIndexes({
-        @CompoundIndex(name = "idx_plan_idempotency", def = "{'planId': 1, 'idempotencyKey': 1}")
+        // 幂等唯一约束：并发提交同一 (planId, idempotencyKey) 时由数据库兜底，避免双起流。
+        // sparse=true 保证未携带幂等键的实例不受约束（该字段为 null 时不参与索引）。
+        @CompoundIndex(name = "uk_plan_idempotency", def = "{'planId': 1, 'idempotencyKey': 1}",
+                unique = true, sparse = true)
 })
 public class Inst extends BaseEntity implements Serializable {
 
@@ -36,6 +39,11 @@ public class Inst extends BaseEntity implements Serializable {
      */
     @Transient
     public static final String ZK_LOCK_PREFIX = "/INST_LOCK_";
+    /**
+     * 流程运行准入锁前缀：同一 planId 同时只允许一个实例处于运行态
+     */
+    @Transient
+    public static final String ZK_PLAN_LOCK_PREFIX = "/PLAN_RUNNING_";
     /**
      * 实例状态：等待，实例创建完没有开始就是等待状态；
      */

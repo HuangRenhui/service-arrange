@@ -28,4 +28,12 @@ public class OrchestrationProperties {
      * 任务失败后同步重试的最大休眠（毫秒），避免消费线程被长 delay 占满。
      */
     private long retryDelayMaxMs = 3000L;
+
+    /**
+     * 同一流程（planId）是否只允许一个运行中实例。
+     * <p>
+     * 开启后 {@code /inst/run} 会先抢 ZooKeeper 准入锁 {@code /PLAN_RUNNING_{planId}}，
+     * 已有实例在跑时直接返回 400「流程正在运行中」，避免同一流程被重复点击/重复提交而并行执行。
+     */
+    private boolean singleRunningPerPlan = true;
 }
