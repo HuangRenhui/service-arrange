@@ -54,9 +54,24 @@ public class ScriptOperateExecutor implements Execute {
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
             Process process = pb.start();
-            boolean finished = process.waitFor(timeout, TimeUnit.MILLISECONDS);
+            //先并发消费输出再等待进程结束：输出写满管道缓冲区时子进程会阻塞在 write，
+            //若先 waitFor 会一直等到超时，把已成功的脚本误判为 TIMEOUT
+            String[] outHolder = new String[1];
+            Thread reader = new Thread(() -> outHolder[0] = readQuietly(process, 256 * 1024), "script-stdout-reader");
+            reader.setDaemon(true);
+            reader.start();
+            boolean finished;
+            try {
+                finished = process.waitFor(timeout, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ie) {
+                process.destroyForcibly();
+                Thread.currentThread().interrupt();
+                throw ie;
+            }
             if (!finished) {
                 process.destroyForcibly();
+                process.waitFor(3, TimeUnit.SECONDS);
+                reader.join(3000L);
                 //脚本超时通常是下游或机器负载问题，按可重试处理，由 RetryRules 限定次数
                 task.setErrorClass(ErrorClass.RETRYABLE.name());
                 task.setErrorCode("TIMEOUT");
@@ -65,17 +80,23 @@ public class ScriptOperateExecutor implements Execute {
                 instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, "脚本超时 " + timeout + "ms"));
                 return task;
             }
-            String out = readLimited(process.getInputStream(), 256 * 1024);
+            reader.join(3000L);
+            String out = outHolder[0] == null ? "" : outHolder[0];
             int code = process.exitValue();
             JSONObject result = JSONUtil.createObj().set("exitCode", code).set("stdout", out);
-            task.getOutputs().setContentType("application/json");
-            task.getOutputs().setValue(JSONUtil.toJsonStr(result));
+            Task.Result outputs = task.getOutputs();
+            if (outputs == null) {
+                outputs = new Task.Result();
+                task.setOutputs(outputs);
+            }
+            outputs.setContentType("application/json");
+            outputs.setValue(JSONUtil.toJsonStr(result));
             if (code == 0) {
                 task.setErrorClass(ErrorClass.SUCCESS.name());
                 task.setErrorMessage(null);
                 task.setState(Task.STATE_SUCCESS);
             } else {
-                //按 task.error-mapping.script 的 exit-code 分类；未配置时沿用原行为（不贴分类，消费端按可重试）
+                //按 task.error-mapping.script 的 exit-code 分类；未声明的退出码取该协议的 default-action（当前配为 optimistic → 可重试）
                 applyExitCode(task, code, out);
                 task.setState(Task.STATE_FAIL);
             }
@@ -151,6 +172,17 @@ public class ScriptOperateExecutor implements Execute {
             cmd.add(StringUtils.isEmpty(script) ? "echo empty" : script);
         }
         return cmd;
+    }
+
+    /**
+     * 读线程专用：进程被强杀时流可能抛异常，读取失败按空输出处理，不影响主流程的退出码判定。
+     */
+    private static String readQuietly(Process process, int max) {
+        try {
+            return readLimited(process.getInputStream(), max);
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private static String readLimited(InputStream in, int max) throws Exception {

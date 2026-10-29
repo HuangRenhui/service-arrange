@@ -104,6 +104,14 @@ public class ErrorMappingProperties {
         private List<String> fatal = new ArrayList<>();
 
         /**
+         * 本协议下「未命中三张列表的错误码」的默认分类，为 null 时继承全局 {@code task.error-mapping.default-action}。
+         * <p>
+         * 用于按协议区分语义：脚本退出码、查询类调用未声明的码通常可重试（optimistic），
+         * 而有副作用的写操作应保持 conservative。显式写在 retryable / fatal 里的码仍优先于此项。
+         */
+        private DefaultAction defaultAction;
+
+        /**
          * 主判据为 {@code body-jsonpath} 时的 jsonpath 表达式，例如 {@code $.errorCode}。
          */
         private String path;

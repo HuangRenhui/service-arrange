@@ -73,7 +73,7 @@ public class ErrorClassifier {
         ErrorMappingProperties.ProtocolRule base = props.rule(protocol);
         ErrorMappingProperties.ProtocolRule override = nodeOverride(task);
         if (base == null && override == null) {
-            return fallback(errCode(status), ex);
+            return fallback(null, null, errCode(status), ex);
         }
 
         String code = extract(pickMatch(base, override), pickPath(base, override), status, body, ex);
@@ -91,7 +91,7 @@ public class ErrorClassifier {
         if (primary != null) {
             return new Verdict(primary, code, describe(protocol, code, ex));
         }
-        return fallback(code, ex);
+        return fallback(base, override, code, ex);
     }
 
     /**
@@ -163,7 +163,7 @@ public class ErrorClassifier {
             return null;
         }
         ErrorClass hit = matchThree(bc.getSuccess(), bc.getRetryable(), bc.getFatal(), bizCode);
-        return new Verdict(hit == null ? defaultClass() : hit, bizCode, describe(protocol, bizCode, ex));
+        return new Verdict(hit == null ? defaultClass(rule, null) : hit, bizCode, describe(protocol, bizCode, ex));
     }
 
     /**
@@ -222,6 +222,7 @@ public class ErrorClassifier {
             rule.setSuccess(strList(node.getJSONArray("success")));
             rule.setRetryable(strList(node.getJSONArray("retryable")));
             rule.setFatal(strList(node.getJSONArray("fatal")));
+            rule.setDefaultAction(defaultAction(node.getStr("defaultAction")));
             JSONObject bodyCode = node.getJSONObject("bodyCode");
             if (bodyCode != null && !bodyCode.isEmpty()) {
                 ErrorMappingProperties.BodyCode bc = new ErrorMappingProperties.BodyCode();
@@ -233,6 +234,20 @@ public class ErrorClassifier {
             }
             return rule;
         } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 解析节点级 {@code defaultAction}，取值 optimistic / conservative，非法或缺省返回 null（继承协议与全局配置）。
+     */
+    private ErrorMappingProperties.DefaultAction defaultAction(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return ErrorMappingProperties.DefaultAction.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }
@@ -327,19 +342,31 @@ public class ErrorClassifier {
 
     /**
      * 无匹配规则时的兜底分类。
+     *
+     * @param base     全局协议规则，可为 null
+     * @param override 节点级覆盖规则，可为 null
+     * @param code     错误码
+     * @param ex       调用异常
+     * @return 兜底分类结果
      */
-    private Verdict fallback(String code, Throwable ex) {
+    private Verdict fallback(ErrorMappingProperties.ProtocolRule base,
+                             ErrorMappingProperties.ProtocolRule override,
+                             String code, Throwable ex) {
         if (retryableException(ex)) {
             return new Verdict(ErrorClass.RETRYABLE, code, describe(null, code, ex));
         }
-        return new Verdict(defaultClass(), code, describe(null, code, ex));
+        return new Verdict(defaultClass(base, override), code, describe(null, code, ex));
     }
 
     /**
-     * 未知错误码的默认分类。
+     * 未知错误码的默认分类：节点覆盖 → 协议级 → 全局。
      */
-    private ErrorClass defaultClass() {
-        return props.getDefaultAction() == ErrorMappingProperties.DefaultAction.OPTIMISTIC
+    private ErrorClass defaultClass(ErrorMappingProperties.ProtocolRule base,
+                                    ErrorMappingProperties.ProtocolRule override) {
+        ErrorMappingProperties.DefaultAction action = override != null && override.getDefaultAction() != null
+                ? override.getDefaultAction()
+                : (base != null && base.getDefaultAction() != null ? base.getDefaultAction() : props.getDefaultAction());
+        return action == ErrorMappingProperties.DefaultAction.OPTIMISTIC
                 ? ErrorClass.RETRYABLE : ErrorClass.FATAL;
     }
 
