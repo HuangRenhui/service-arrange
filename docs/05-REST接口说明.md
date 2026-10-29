@@ -13,9 +13,9 @@
 | --- | --- |
 | 文档名称 | REST接口说明 |
 | 文档版本 | v2.0 |
-| 最后更新 | 2026-10-05 |
+| 最后更新 | 2026-10-28 |
 | 状态 | 现行 |
-| 接口总数 | 17 个 |
+| 接口总数 | 18 个 |
 | 相关代码 | `backend/web/**/controller/*Controller.java` · `filter/TraceFilter.java` · `vo/ApiResponse.java` |
 
 ---
@@ -65,14 +65,15 @@
 | 7 | POST | `/servicearrange/plan/delete` | 批量删除流程模型 | `PlanController` |
 | 8 | GET | `/servicearrange/inst/list` | 实例列表（按 `planId` / `state` 过滤）| `InstQueryController` |
 | 9 | GET | `/servicearrange/inst/detail` | 实例详情（实例 + 任务 + 日志）| `InstQueryController` |
-| 10 | POST | `/servicearrange/inst/resume` | 恢复挂起实例 | `InstQueryController` |
-| 11 | POST | `/servicearrange/inst/cancel` | 取消实例 | `InstQueryController` |
-| 12 | GET | `/servicearrange/instlog/list` | 实例级 / 算子级日志 | `InstLogController` |
-| 13 | GET | `/servicearrange/health` | 健康检查（含 MongoDB 探活）| `HealthController` |
-| 14 | POST | `/servicearrange/registerOperator/save` | 保存算子注册信息 | `RegisterInfoController` |
-| 15 | POST | `/servicearrange/registerOperator/delete` | 批量删除算子注册信息 | `RegisterInfoController` |
-| 16 | GET/POST | `/servicearrange/registerOperator/findById` | 按 id 查询算子注册信息 | `RegisterInfoController` |
-| 17 | GET/POST | `/servicearrange/registerOperator/list` | 算子注册列表 | `RegisterInfoController` |
+| 10 | POST | `/servicearrange/inst/suspend` | 挂起实例 | `InstQueryController` |
+| 11 | POST | `/servicearrange/inst/resume` | 恢复挂起实例 | `InstQueryController` |
+| 12 | POST | `/servicearrange/inst/cancel` | 取消实例 | `InstQueryController` |
+| 13 | GET | `/servicearrange/instlog/list` | 实例级 / 算子级日志 | `InstLogController` |
+| 14 | GET | `/servicearrange/health` | 健康检查（含 MongoDB 探活）| `HealthController` |
+| 15 | POST | `/servicearrange/registerOperator/save` | 保存算子注册信息 | `RegisterInfoController` |
+| 16 | POST | `/servicearrange/registerOperator/delete` | 批量删除算子注册信息 | `RegisterInfoController` |
+| 17 | GET/POST | `/servicearrange/registerOperator/findById` | 按 id 查询算子注册信息 | `RegisterInfoController` |
+| 18 | GET/POST | `/servicearrange/registerOperator/list` | 算子注册列表 | `RegisterInfoController` |
 
 > 除 `#1`（运行实例，返回业务数据本身）与 `#14`~`#16`（返回裸值）外，其余接口统一返回 `{code,msg,data}`，见 §12。
 
@@ -146,7 +147,16 @@
 
 #### 2.2.4 文件上传
 
-`multipart/form-data` 中的文件字段会被读取（`multiFileMap`），但当前实现**仅打印文件名与大小**，实际未落盘，字段值被置为固定字符串 `"path"`。
+`multipart/form-data` 中的文件字段（`multiFileMap`）会**落盘到本地**，并回填到实例入参：
+
+| 项 | 说明 |
+| --- | --- |
+| 存储实现 | `LocalFileStorage`（`backend/engine/.../files/LocalFileStorage.java`）|
+| 存储目录 | `{servea.file.root}/{instId}/{原始文件名}`，同名自动追加 `-1`、`-2` |
+| 参数值 | 实例入参中该字段的值改为 `local://{instId}/{存储文件名}`，供下游 `fileUrl` / 文件参数引用 |
+| 大小上限 | `servea.file.max-size`（默认 100MB），同时受 `spring.servlet.multipart.max-file-size` 约束 |
+| 保存时机 | 实例落库（拿到 `instId`）之后保存，因此文件目录天然与实例一一对应 |
+| 保存失败 | 抛 500，实例不会带着占位值继续运行 |
 
 ### 2.3 DSL 来源与发布门禁
 
@@ -168,7 +178,23 @@ DSL 加载顺序（`InstController.loadDsl`）：
 | 生效条件 | `planId + idempotencyKey` 命中已有实例，且该实例状态**不是** `FAIL` / `CANCEL` |
 | 命中行为 | 不再新建实例，直接返回已有实例信息，`data.idempotentHit = true` |
 | 不生效场景 | `servea_optType=get_result`（查询不参与幂等）；未传幂等键 |
-| 存储支撑 | `SERVEA_INST` 上的复合索引 `idx_plan_idempotency = {planId:1, idempotencyKey:1}` |
+| 存储支撑 | `SERVEA_INST` 上的复合索引 `uk_plan_idempotency = {planId:1, idempotencyKey:1}`（`unique` + `sparse`），并发提交由数据库唯一约束兜底，冲突后回读已存在实例 |
+
+### 2.4.1 流程运行准入（同一流程只跑一个）
+
+幂等键只能防“同一个键重复提交”；不传键或每次用新键时，同一流程仍会被并发运行。为此 `/inst/run` 增加 **流程级准入锁**：
+
+| 项 | 说明 |
+| --- | --- |
+| 开关 | `task.orchestration.single-running-per-plan`（默认 `true`）|
+| 机制 | ZooKeeper `EPHEMERAL` 节点 `/PLAN_RUNNING_{planId}`，数据为持有者 `instId`，`create` 原子抢占 |
+| 抢占失败 | **删除本次新建的实例**并返回 HTTP 400：`{"code":400,"msg":"流程正在运行中（实例 xxx），请等待结束或取消后再运行"}` |
+| 释放时机 | `POST /inst/cancel`、`POST /inst/delete` 显式释放；属主实例已 `SUCCESS` / `FAIL` 时，下一次运行会识别为陈旧锁并自动清理；ZooKeeper 会话结束自动消失 |
+| ZK 不可用 | 回退按库内状态校验（同 `planId` 下是否存在 `WAITE` / `RUNNING` 实例）；库内也没有则放行（fail-open），并打 WARN |
+| 实现 | `backend/engine/.../lock/PlanRunLock.java` |
+
+> 与 ZK 实例锁 `/INST_LOCK_{instId}` 的区别：`/INST_LOCK_` 解决**同一实例内多节点串行**（消费端抢占），
+> `/PLAN_RUNNING_` 解决**同一流程多实例并发**（入口准入）。
 
 ### 2.5 请求示例
 
@@ -243,7 +269,8 @@ Content-Disposition: form-data; name="servea_instId"
 | --- | --- |
 | `application/json` | 解析后的 JSON 对象 / 数组；非合法 JSON 则原样字符串 |
 | `text/plain` | 字符串 |
-| 其他且 `value` 以 `filemgr://` 开头 | 设置 `content-disposition` 走下载分支（文件名取自路径末段）|
+| 其他且 `value` 以 `local://` 开头 | 流式下载本地文件：`Content-Disposition: attachment`、`Content-Length`、按扩展名推断 `Content-Type`；文件不存在 → 400 |
+| 其他且 `value` 不是 `local://` | 400「不支持的文件地址（仅支持 local://）」 |
 | 无 `outputs` | 实例 id 字符串 |
 
 **查询结果失败**：实例不存在或未成功时返回 HTTP 400：
@@ -256,7 +283,7 @@ Content-Disposition: form-data; name="servea_instId"
 
 | `servea_optType` | 行为 |
 | --- | --- |
-| `run` | 解析 DSL → 生成 `Inst` 落库（先存，状态置 `RUNNING`）→ 取 `roots` 首元素为开始节点 → `StartTask.convert` → `taskDao.save` → `taskProductor.sendTaskResult` 触发执行 |
+| `run` | 解析 DSL → 幂等查重 → 生成 `Inst` 落库（`WAITE`）→ 抢占流程准入锁（被占用则删实例并 400）→ 文件落盘 → 校验开始节点 → 置 `RUNNING` → `StartTask.convert` → `taskDao.save` → `taskProductor.sendTaskResult` 触发执行 |
 | `get_result` | 按 `servea_instId` 查实例：不存在 → 400；状态非 `SUCCESS` → 400；`SUCCESS` → 返回 `outputs` |
 
 > `servea_sync` 仅写入 `Inst.sync` 字段，Controller **未实现等待轮询**，请求立即返回（同步语义由调用方轮询 `get_result` 或 `inst/detail` 实现）。
@@ -266,8 +293,8 @@ Content-Disposition: form-data; name="servea_instId"
 | 项 | 说明 |
 | --- | --- |
 | 同步语义 | `servea_sync` 不影响响应时机，始终立即返回 |
-| 文件上传 | 仅打印，未落盘，值固定为 `"path"` |
-| 文件下载 | 分支已具备，但 `outputs.contentType` 与 `filemgr://` 存储的联动仍在演进中 |
+| 文件存储 | 落本地磁盘（`servea.file.root`），不再依赖 `filemgr://` 远程文件服务；历史数据中的 `filemgr://` 地址无法解析，下载会返回 400 |
+| 文件生命周期 | 文件与实例目录绑定，删除实例时整目录级联删除（见 §4.6）|
 | 返回结构 | `get_result` 成功时返回业务数据本身，与其它接口的 `{code,msg,data}` 不一致（见 §12）|
 
 ---
@@ -361,8 +388,10 @@ POST /servicearrange/plan/publish?id=PLAN_2026_001 HTTP/1.1
 | --- | --- | --- | --- |
 | GET | `/inst/list` | `planId`（可选）、`state`（可选）| 实例列表；先按 `planId` 过滤，再按 `state` 过滤 |
 | GET | `/inst/detail` | `id`（query，必填）| 实例详情 |
+| POST | `/inst/suspend` | `id`（query，必填）| 挂起实例（不打断在途节点）|
 | POST | `/inst/resume` | `id`（query，必填）| 恢复挂起实例 |
-| POST | `/inst/cancel` | `id`（query，必填）| 取消实例 |
+| POST | `/inst/cancel` | `id`（query，必填）| 取消实例（只停调度）|
+| POST | `/inst/delete` | body `List<String>`、`force`（query，可选）| 删除实例并级联清理任务、日志、本地文件 |
 
 ### 4.1 `/inst/list`
 
@@ -393,15 +422,24 @@ POST /servicearrange/plan/publish?id=PLAN_2026_001 HTTP/1.1
 
 > 实例不存在 → 400「实例不存在」。
 
-### 4.3 `/inst/resume`（恢复挂起实例）
+### 4.3 `/inst/suspend`（挂起实例）
+
+| 步骤 | 行为 |
+| --- | --- |
+| 校验 | 仅 `state = WAITE` / `RUNNING` 可挂起，否则 400「仅运行中或等待中的实例可以挂起」 |
+| 变更 | `state = SUSPEND` 并落库；不打断在途节点 |
+| 后续 | 下一个节点被消费时检测到 `SUSPEND`，把「节点名 + 循环次数」记入 `suspendNodes` 后 ack，不再调度下游 |
+
+### 4.4 `/inst/resume`（恢复挂起实例）
 
 | 步骤 | 行为 |
 | --- | --- |
 | 校验 | 仅 `state = SUSPEND` 可恢复，否则 400「仅挂起实例可以恢复」 |
-| 变更 | `state = RUNNING` 并落库 |
-| 续跑 | 取该实例下第一个 `WAITE` 或 `RUNNING` 的任务，`taskProductor.sendTaskResult(task)` 重新投递 |
+| 变更 | `state = RUNNING`、清空 `suspendNodes` 并落库 |
+| 续跑 | 按 `suspendNodes` 记录的节点名 + 循环次数回查任务，`sendTaskResult` 重投**结果**继续调度下游（节点已执行完，重投执行会重复副作用）；记录为空时只置回运行中 |
+| 失败 | `suspendNodes` 非空但匹配不到任务 → 500「挂起节点未找到对应任务」 |
 
-### 4.4 `/inst/cancel`（取消实例）
+### 4.5 `/inst/cancel`（取消实例）
 
 | 步骤 | 行为 |
 | --- | --- |
@@ -409,6 +447,27 @@ POST /servicearrange/plan/publish?id=PLAN_2026_001 HTTP/1.1
 | 变更 | `state = CANCEL`、`endDate = 当前时间`、`failReason = "cancelled"`，落库 |
 
 > 取消是**状态驱动**：已在消费线程中执行的任务不会被强制中断，后续节点不再调度。
+
+### 4.6 `/inst/delete`（删除实例，级联清理）
+
+请求：
+
+```http
+POST /servicearrange/inst/delete HTTP/1.1
+Content-Type: application/json
+
+["6650f3a1c2b3d4e5f6a7b8c9"]
+```
+
+| 步骤 | 行为 |
+| --- | --- |
+| 校验 | `ids` 为空 → 400「请指定要删除的实例 id」；实例 `state = RUNNING` 且未传 `force=true` → 400「实例正在运行，不能删除」 |
+| 删除顺序 | 任务（`TaskDao.deleteByInstId`）→ 日志（`InstLogDao.deleteByInstId`）→ 实例（`InstDao.deleteById`）→ 本地文件（`LocalFileStorage.deleteByInstId` 整目录删除） |
+| 不存在的 id | 跳过，不报错 |
+| 响应 | `{code:200,msg:"success",data:{instCount,taskCount,logCount,fileCount}}` |
+
+> 库记录先删、文件后删：文件删除失败只会残留孤儿文件，不会出现「实例没了、文件还挂在别处」的脏数据。
+> 删除文件只作用于 `{servea.file.root}/{instId}` 目录，不影响其它实例。
 
 ---
 
@@ -654,7 +713,7 @@ GET /servicearrange/registerOperator/findById?id=6650f3a1c2b3d4e5f6a7b8c9 HTTP/1
 
 | 范围 | 是否包装 |
 | --- | --- |
-| `/plan/*`、`/inst/list`、`/inst/detail`、`/inst/resume`、`/inst/cancel`、`/instlog/list`、`/health`、`/registerOperator/list` | ✅ 全部包装 |
+| `/plan/*`、`/inst/list`、`/inst/detail`、`/inst/suspend`、`/inst/resume`、`/inst/cancel`、`/inst/delete`、`/instlog/list`、`/health`、`/registerOperator/list` | ✅ 全部包装 |
 | `/inst/run/or/getResult/{planId}`（`run` 分支与幂等命中）| ✅ 包装，`data` 含 `id`/`state`/`traceId`/`planVersion`/`idempotentHit` |
 | `/inst/run/or/getResult/{planId}`（`get_result` 成功）| ❌ 直接返回业务数据（JSON / 文本 / 文件流）|
 | `/registerOperator/save` · `/delete` · `/findById` | ❌ 返回裸值（`"success"` / 实体 / `null`）|
