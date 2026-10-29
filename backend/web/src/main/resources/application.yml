@@ -6,6 +6,11 @@ server:
 spring:
   application:
     name: servicearrange #项目名称
+  servlet:
+    multipart:
+      #上传文件大小上限，需与 servea.file.max-size 保持一致口径
+      max-file-size: 100MB
+      max-request-size: 100MB
   #rabbitmq配置
   cloud:
     stream:
@@ -14,9 +19,9 @@ spring:
           environment:
             spring:
               rabbitmq:
-                addresses: 8.129.116.16:5672
-                password: guest
-                username: guest
+                addresses: 10.30.14.84:5672
+                password: admin
+                username: gac2025@ds.cn
           type: rabbit
       bindings:
         output_channel:
@@ -78,6 +83,14 @@ spring:
   profiles:
     active: jar
 
+#实例文件本地存储：文件按实例目录 {instId}/ 存放，实例删除时整目录级联删除
+servea:
+  file:
+    #存储根目录（相对路径按启动目录解析，生产建议配绝对路径）
+    root: ./data/files
+    #单文件大小上限：字节，默认 100MB
+    max-size: 104857600
+
 #zk配置
 zk:
   session-timeout: 5000
@@ -86,6 +99,18 @@ zk:
 task:
   result_queue_name: /task/result
   run_queue_name: /task/run
+  #任务投递：mq=只走 RabbitMQ；local=只走进程内直连（不创建任何 MQ 连接）；auto=优先 MQ，连不上自动降级本地，恢复后自动切回
+  dispatch:
+    mode: auto
+    #MQ 不可用或投递失败时是否降级本地直连；false 时直接抛错（严格依赖 MQ 的部署用）
+    degrade-to-local: true
+    #MQ 可达性探活间隔与连接超时，单位毫秒
+    probe-interval-ms: 10000
+    probe-timeout-ms: 1000
+    #探活地址，缺省从 binder 的 rabbitmq.addresses 或 spring.rabbitmq.* 推导
+    #address: 10.30.14.84:5672
+    #本地直连分片线程数，0=按 CPU 自动（cpu*2，最小 4）；同一实例固定落在同一分片，保证串行
+    local-threads: 0
   #消费端并发与背压保护
   consumer:
     #结果通道消费并发数，队列堆积时可上调，需与实例处理的串行化设计配合
@@ -108,12 +133,14 @@ task:
     max-handle-times: 5
     #重排队是否启用延迟退避
     delay-requeue-enabled: true
-  #编排治理（发布门禁 / 超时 / 重试退避）
+  #编排治理（发布门禁 / 超时 / 重试退避 / 运行准入）
   orchestration:
     #生产环境建议 true：仅 PUBLISHED 的 Plan 可被运行
     require-published: false
     task-timeout-ms: 60000
     retry-delay-max-ms: 3000
+    #同一流程只允许一个运行中实例：ZK 准入锁 /PLAN_RUNNING_{planId}，占用时返回 400「流程正在运行中」；压测需并行时置 false
+    single-running-per-plan: true
   #错误码映射与重试分类：换协议/换厂商只改映射，执行器与编排零改动
   error-mapping:
     #未知错误码默认分类：conservative(保守→FATAL) / optimistic(乐观→RETRYABLE)
@@ -160,3 +187,6 @@ task:
         success: ["0"]
         retryable: []
         fatal: []
+        #未声明的退出码按可重试处理（脚本失败多为环境/依赖抖动，保留重试）；
+        #确属不可恢复的退出码写进 fatal 即可覆盖本项，如 fatal: ["126", "127"]
+        default-action: optimistic
