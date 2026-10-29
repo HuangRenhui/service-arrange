@@ -3,7 +3,6 @@ package com.hrh.servicearrange.service.impl;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import cn.hutool.script.ScriptUtil;
 import com.hrh.servicearrange.dao.InstDao;
 import com.hrh.servicearrange.dao.InstLogDao;
 import com.hrh.servicearrange.dao.TaskDao;
@@ -14,11 +13,9 @@ import com.hrh.servicearrange.entity.NodeLoopInfo;
 import com.hrh.servicearrange.entity.Task;
 import com.hrh.servicearrange.executor.impl.DataMapOperateExecutor;
 import com.hrh.servicearrange.service.ITaskService;
+import com.hrh.servicearrange.utils.SafeExpressionEvaluator;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.expression.Expression;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -33,6 +30,7 @@ import java.util.stream.Stream;
  * @date 2022/4/8
  * @flow
  */
+@Slf4j
 @Service(ITaskService.SERVICE_BEAN_NAME)
 public class TaskServiceImpl implements ITaskService {
     @Autowired
@@ -109,13 +107,16 @@ public class TaskServiceImpl implements ITaskService {
             }
         }
         for (int i = 0; i < R_Values.size(); i++) {
+            String replacement;
             if (null != conditionData && i < conditionData.size() && conditionData.get(i) != null
                     && conditionData.get(i).getType() != null
                     && "string".equals(conditionData.get(i).getType().trim().toLowerCase())) {
-                exp = exp.replace("R" + i, "'" + R_Values.get(i) + "'");
+                //字符串字面量：转义单引号，避免值里带 ' 导致表达式语法错误
+                replacement = "'" + SafeExpressionEvaluator.escapeSingleQuote(R_Values.get(i)) + "'";
             } else {
-                exp = exp.replace("R" + i, R_Values.get(i));
+                replacement = R_Values.get(i);
             }
+            exp = replacePlaceholder(exp, "R" + i, replacement);
         }
         //处理L表达式
         for (int i = 0; i < L.length; i++) {
@@ -145,45 +146,35 @@ public class TaskServiceImpl implements ITaskService {
             }
         }
         for (int i = 0; i < L.length; i++) {
+            boolean stringType = null != conditionData && i < conditionData.size() && conditionData.get(i) != null
+                    && "string".equals(conditionData.get(i).getType());
             if (null == L[i]) {
-                if (null != conditionData && i < conditionData.size() && conditionData.get(i) != null && "string".equals(conditionData.get(i).getType())) {
-                    exp = exp.replace("L" + i, "'null'");
-                } else {
-                    exp = exp.replace("L" + i, "null");
-                }
+                exp = replacePlaceholder(exp, "L" + i, stringType ? "'null'" : "null");
             } else {
-                Object tmp = null;
-                try {
-                    tmp = ScriptUtil.eval(L[i]);
-                } catch (Exception e2) {
-                }
-                if (null != tmp) {
-                    if (null != conditionData && i < conditionData.size() && conditionData.get(i) != null && "string".equals(conditionData.get(i).getType())) {
-                        exp = exp.replace("L" + i, "'" + tmp.toString() + "'");
-                    } else {
-                        exp = exp.replace("L" + i, tmp.toString());
-                    }
-                } else {
-                    if (null != conditionData && i < conditionData.size() && conditionData.get(i) != null && "string".equals(conditionData.get(i).getType())) {
-                        exp = exp.replace("L" + i, "'" + L[i] + "'");
-                    } else {
-                        exp = exp.replace("L" + i, L[i]);
-                    }
-                }
+                //L 表达式同样只允许受限求值，不再交给 JS 引擎
+                Object tmp = SafeExpressionEvaluator.eval(L[i]);
+                String literal = tmp == null ? L[i] : tmp.toString();
+                exp = replacePlaceholder(exp, "L" + i, stringType
+                        ? "'" + SafeExpressionEvaluator.escapeSingleQuote(literal) + "'" : literal);
             }
         }
         if (StrUtil.isEmpty(exp)) {
             return false;
         }
-        try {
-            ExpressionParser parser = new SpelExpressionParser();
-            Expression expression = parser.parseExpression(exp);
-            result = Boolean.TRUE.equals(expression.getValue(SimpleEvaluationContext.forReadOnlyDataBinding().build(), Boolean.class));
-        } catch (Exception e) {
-            return false;
+        result = SafeExpressionEvaluator.evalBoolean(exp, false);
+        if (!result) {
+            log.debug("决策表达式未命中, exp={}", exp);
         }
-
         return result;
+    }
+
+    /**
+     * 按占位符边界替换（R1 不能污染 R10），并对替换值做字面量转义
+     */
+    private String replacePlaceholder(String exp, String placeholder, String value) {
+        String safeValue = value == null ? "null" : value;
+        return exp.replaceAll("\\b" + placeholder + "\\b",
+                java.util.regex.Matcher.quoteReplacement(safeValue));
     }
 
     @Override

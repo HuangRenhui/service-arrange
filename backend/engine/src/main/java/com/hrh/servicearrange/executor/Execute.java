@@ -12,10 +12,13 @@ import com.hrh.servicearrange.mq.TaskProductor;
 
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author huangrenhui
@@ -24,11 +27,24 @@ import java.util.concurrent.TimeoutException;
  */
 public interface Execute {
 
-    ExecutorService TASK_POOL = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "servea-task-exec");
-        t.setDaemon(true);
-        return t;
-    });
+    /**
+     * 节点执行线程池：有界队列 + 上限线程数，避免下游变慢时线程无界增长。
+     * 队列满时拒绝并在 {@link #run(String)} 中按可重试失败处理（交给 RetryRules 退避重试）。
+     */
+    int TASK_POOL_CORE = 8;
+    int TASK_POOL_MAX = 64;
+    int TASK_POOL_QUEUE = 512;
+    ExecutorService TASK_POOL = new ThreadPoolExecutor(TASK_POOL_CORE, TASK_POOL_MAX, 60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(TASK_POOL_QUEUE), new java.util.concurrent.ThreadFactory() {
+        private final AtomicInteger seq = new AtomicInteger();
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, "servea-task-exec-" + seq.incrementAndGet());
+            t.setDaemon(true);
+            return t;
+        }
+    }, new ThreadPoolExecutor.AbortPolicy());
 
     /**
      *
@@ -80,6 +96,14 @@ public interface Execute {
             task.setState(Task.STATE_FAIL);
             instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
                     InstLog.LEVEL_ERRO, "任务超时 " + timeoutMs + "ms"));
+        } catch (RejectedExecutionException rejected) {
+            //线程池已满：不丢任务，标记为可重试，由消费端按 RetryRules 退避后重新投递
+            task.setErrorClass(ErrorClass.RETRYABLE.name());
+            task.setErrorCode("POOL_BUSY");
+            task.setErrorMessage("执行线程池繁忙，任务已排队等待重试");
+            task.setState(Task.STATE_FAIL);
+            instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
+                    InstLog.LEVEL_WARN, "执行线程池繁忙，按可重试处理"));
         } catch (Exception e) {
             //执行器未产出分类时的兜底：按 retryable-exceptions 前缀匹配，未命中则按 default-action
             ErrorClassifier.Verdict verdict = SpringUtil.getBean(ErrorClassifier.class).classify(task, null, e);
