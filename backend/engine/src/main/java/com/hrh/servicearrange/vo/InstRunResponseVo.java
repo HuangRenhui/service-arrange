@@ -52,7 +52,6 @@ public class InstRunResponseVo {
         }
 
         public Result() {
-            // TODO Auto-generated constructor stub
         }
 
         public Result(String contentType, String path, Object value) {

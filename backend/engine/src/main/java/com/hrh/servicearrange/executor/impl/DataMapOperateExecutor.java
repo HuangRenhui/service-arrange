@@ -1,11 +1,12 @@
 package com.hrh.servicearrange.executor.impl;
 
+import lombok.extern.slf4j.Slf4j;
+
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import cn.hutool.script.JavaScriptEngine;
 import com.hrh.servicearrange.dao.InstLogDao;
 import com.hrh.servicearrange.dao.TaskDao;
 import com.hrh.servicearrange.dsl.FunDatamapCell;
@@ -17,6 +18,7 @@ import com.hrh.servicearrange.entity.Task;
 import com.hrh.servicearrange.executor.Execute;
 import com.hrh.servicearrange.parser.annotation.CellType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -31,6 +33,7 @@ import java.util.stream.Stream;
  * @date 2022/4/29
  * @flow 数据映射，将表达式映射为具体的值
  */
+@Slf4j
 @Service(value = CellType.FUN_DATAMAP)
 public class DataMapOperateExecutor implements Execute {
     @Autowired
@@ -228,24 +231,33 @@ public class DataMapOperateExecutor implements Execute {
                 keys.add(symbol);
             }
         }
-        String valueExp = keys.stream().map(s -> {
+        StringBuilder expression = new StringBuilder();
+        for (String s : keys) {
             Object v = s;
             if (s.startsWith("#")) {
-                v = valueConvert(startId, finalJsonpathMapping, pouts, task, instLogDao);
+                //按当前片段（如 "#pno_x$age"）取值，不能把整条表达式传进去，否则会被判为"含计算符"直接抛错
+                v = valueConvert(startId, s, pouts, task, instLogDao);
+                if (v == null) {
+                    instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
+                            InstLog.LEVEL_ERRO, "算术映射取值失败，存在空值：" + s));
+                    return null;
+                }
             }
-            return v.toString();
-        }).collect(Collectors.joining());
-        JavaScriptEngine jse = JavaScriptEngine.instance();
+            expression.append(v.toString().trim());
+        }
+        String valueExp = expression.toString();
         try {
-            if (valueExp == null || !valueExp.matches("[0-9.\\s+\\-*/()]+")) {
-                instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_ERRO, "拒绝执行非算术映射表达式"));
+            if (!valueExp.matches("[0-9.\\s+\\-*/()]+")) {
+                instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
+                        InstLog.LEVEL_ERRO, "拒绝执行非算术映射表达式：" + valueExp));
                 return null;
             }
-            jse.eval("var obj=" + valueExp);
-            value = jse.get("obj");
+            //纯四则运算交给 SpEL：不引入脚本引擎，无并发串号风险，也不存在代码执行能力
+            value = new SpelExpressionParser().parseExpression(valueExp).getValue(Number.class);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            log.error("eval arithmetic expression fail, exp={}", valueExp, e);
+            instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(),
+                    InstLog.LEVEL_ERRO, "算术映射计算失败：" + valueExp + "，" + e.getMessage()));
             value = null;
         }
         return value;

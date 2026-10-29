@@ -1,5 +1,7 @@
 package com.hrh.servicearrange.parser;
 
+import lombok.extern.slf4j.Slf4j;
+
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
  * @date 2022/3/31
  * @flow
  */
+@Slf4j
 @Component
 public class DslParser {
 
@@ -57,13 +60,6 @@ public class DslParser {
         return result;
     }
 
-    public static void main(String[] args) {
-        String s = FileUtil.readUtf8String("D:\\projectManager\\dagproject\\servicearrange\\main\\src\\main\\resources\\hrh_http.json");
-        System.out.println(s);
-        DslParser dslParser = new DslParser();
-        dslParser.parser(s);
-    }
-
     public Inst parser(String dslStr) {
         if (StrUtil.isEmpty(dslStr)) {
             throw new IllegalArgumentException("DSL 为空");
@@ -72,7 +68,7 @@ public class DslParser {
         if (dsl == null || dsl.getCells() == null) {
             throw new IllegalArgumentException("DSL 结构非法：缺少 cells 数组");
         }
-        System.out.println("dsl：" + JSONUtil.toJsonStr(dsl));
+        log.debug("dsl: {}", JSONUtil.toJsonStr(dsl));
         List<Cell> cells = dsl.getCells().stream().filter(c -> c != null && !CellType.GLOBAL_DATA.equals(c.getCellType())).collect(Collectors.toList());
         List<Cell> globalDatas = dsl.getCells().stream().filter(c -> c != null && CellType.GLOBAL_DATA.equals(c.getCellType())).collect(Collectors.toList());
         List<Cell> edges = dsl.getCells().stream()
@@ -93,7 +89,7 @@ public class DslParser {
                 .map(Cell::getId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        System.out.println("independs：" + JSONUtil.toJsonStr(independs));
+        log.debug("independs: {}", independs);
         List<Cell> roots = cells.stream().filter(n -> srcNodeIds.contains(n.getId())).filter(n -> !tarNodeIds.contains(n.getId())).collect(Collectors.toList());
         List<Cell> ends = cells.stream().filter(n -> tarNodeIds.contains(n.getId())).filter(n -> !srcNodeIds.contains(n.getId())).collect(Collectors.toList());
         Map<String, Set<String>> nodeChildsMap = new HashMap<>();

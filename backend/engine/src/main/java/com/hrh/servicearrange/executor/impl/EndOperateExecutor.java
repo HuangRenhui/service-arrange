@@ -1,5 +1,7 @@
 package com.hrh.servicearrange.executor.impl;
 
+import lombok.extern.slf4j.Slf4j;
+
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONObject;
@@ -27,6 +29,7 @@ import java.util.stream.Stream;
  * @date 2022/5/9
  * @flow 结束节点，将上一个节点数据根据输出规则进行调整，结果作为整个实例的结果
  */
+@Slf4j
 @Service(CellType.END)
 public class EndOperateExecutor implements Execute {
     @Autowired
@@ -43,7 +46,7 @@ public class EndOperateExecutor implements Execute {
                 task = doTaskRun(task, inst, taskDao, instLogDao);
             } catch (Exception e) {
                 instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO, "最终结果调试时，参数转换异常，请确认模型出参的所有映射相关的节点是否都参与了调试！" + e.getMessage()));
-                e.printStackTrace();
+                log.error("end node debug run fail, taskId={}", task.getId(), e);
             } finally {
                 task.setState(Task.STATE_SUCCESS);
                 task.setExecutorEndDate(new Date());

@@ -1,5 +1,7 @@
 package com.hrh.servicearrange.executor.impl;
 
+import lombok.extern.slf4j.Slf4j;
+
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import com.hrh.servicearrange.dao.InstLogDao;
@@ -22,6 +24,7 @@ import java.util.stream.Stream;
 /**
  * 开始节点，什么都不做，只是赋予执行成功
  */
+@Slf4j
 @Service(value = CellType.START)
 public class StartOperateExecutor implements Execute {
 
@@ -40,7 +43,7 @@ public class StartOperateExecutor implements Execute {
                 task = doTaskRun(task, inst, taskDao, instLogDao);
             } catch (Exception e) {
                 instLogDao.save(new InstLog(task.getInstId(), task.getPlanId(), task.getNodeId(), task.getId(), InstLog.LEVEL_INFO, "最终结果调试时，参数转换异常，请确认模型出参的所有映射相关的节点是否都参与了调试！" + e.getMessage()));
-                e.printStackTrace();
+                log.error("start node debug run fail, taskId={}", task.getId(), e);
             } finally {
                 task.setState(Task.STATE_SUCCESS);
                 task.setExecutorEndDate(new Date());

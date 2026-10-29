@@ -105,9 +105,4 @@ public class JsonSchemaUtil {
         }
         return result;
     }
-    public static void main(String[] args) {
-        String xx = "{\"type\":\"object\",\"properties\":{\"code\":{\"jsonpathMapping\":\"\",\"defaultValue\":\"服务编排规则\",\"type\":\"string\",\"value\":null},\"args\":{\"type\":\"object\",\"value\":null,\"properties\":{\"length\":{\"jsonpathMapping\":\"#pno_a757378a-889c-4114-b0c1-292851a2bcba$length\",\"type\":\"number\",\"value\":200},\"width\":{\"jsonpathMapping\":\"#pno_a757378a-889c-4114-b0c1-292851a2bcba$width\",\"type\":\"number\",\"value\":50}}}}}";
-        JSONObject r = jsonSchema2JsonObject(xx);
-        System.out.println(JSONUtil.toJsonStr(r, jsonConfig));
-    }
 }

@@ -4,8 +4,6 @@ import com.hrh.servicearrange.dao.RegisterInfoDao;
 import com.hrh.servicearrange.entity.RegisterInfoEntity;
 import com.hrh.servicearrange.service.IRegisterInfoService;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,8 +19,6 @@ import java.util.Optional;
 @Slf4j
 @Service(IRegisterInfoService.SERVICE_BEAN_NAME)
 public class RegisterInfoServiceImpl implements IRegisterInfoService {
-    private static final Logger logger = LoggerFactory.getLogger(RegisterInfoServiceImpl.class);
-
 
     @Autowired
     private RegisterInfoDao registerInfoDao;
@@ -35,7 +31,7 @@ public class RegisterInfoServiceImpl implements IRegisterInfoService {
             registerInfoEntity.setModifyDate(new Date());
             registerInfoDao.save(registerInfoEntity);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("save register info fail, id={}", registerInfoEntity.getId(), e);
             return e.getMessage();
         }
         return "success";
@@ -46,7 +42,7 @@ public class RegisterInfoServiceImpl implements IRegisterInfoService {
         try {
             registerInfoDao.deleteAllByIdIn(idList);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("delete register info fail, ids={}", idList, e);
             return e.getMessage();
         }
         return "success";
@@ -61,7 +57,7 @@ public class RegisterInfoServiceImpl implements IRegisterInfoService {
                 return optional.get();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("find register info fail, id={}", id, e);
             return e.getMessage();
         }
         return null;

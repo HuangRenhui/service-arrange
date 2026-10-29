@@ -253,7 +253,6 @@ public class Task extends BaseEntity implements Serializable {
         }
 
         public Result() {
-            // TODO Auto-generated constructor stub
         }
 
         public Result(String contentType, String path, String value) {
